@@ -3,75 +3,89 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Scan Ean - Pro</title>
+  <title>Scan Ean - Expiry & Code Tracker</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { brand: { 50: '#f0fdfb', 100: '#ccfbf1', 500: '#32bfa3', 600: '#23a088', 700: '#115e50', 900: '#0d4a3e' }, accent: { 50: '#fff7f5', 100: '#ffeedb', 500: '#ff7c54', 600: '#e5643d', 800: '#9a3412' } } } } }
+  </script>
   <style>
     body { overscroll-behavior-y: contain; -webkit-tap-highlight-color: transparent; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
 </head>
-<body class="h-full flex flex-col bg-slate-50">
+<body class="h-full flex flex-col font-sans select-none overflow-hidden bg-slate-50">
 
-  <header class="bg-white sticky top-0 z-40 px-4 py-3 border-b shadow-sm">
-    <h1 class="text-lg font-bold">Dispensa</h1>
+  <!-- [Mantenuto header e struttura originale...] -->
+  <header class="bg-white sticky top-0 z-40 px-4 py-3 flex items-center justify-between border-b border-slate-100 shadow-sm shrink-0">
+    <h1 class="text-lg font-bold">Scan Ean</h1>
   </header>
 
-  <main class="flex-1 overflow-y-auto pb-28 px-4 pt-4">
-    <!-- Lista Prodotti -->
-    <div id="products-container" class="space-y-3"></div>
-    
-    <!-- Form Inserimento (Esempio semplificato integrato) -->
-    <div class="bg-white p-5 rounded-2xl border shadow-sm space-y-4 mt-4">
-      <h2 class="font-bold text-sm">Aggiungi Prodotto</h2>
-      <input type="text" id="form-name" placeholder="Nome prodotto" class="w-full bg-slate-100 rounded-lg p-2 text-sm">
-      <input type="date" id="form-expiry" class="w-full bg-slate-100 rounded-lg p-2 text-sm">
-      
-      <!-- TENDINA NOTIFICA -->
-      <label class="text-[10px] font-bold text-slate-500 uppercase">Avvisami giorni prima:</label>
-      <select id="form-alert-days" class="w-full bg-slate-100 rounded-lg p-2 text-sm">
-        <option value="1">1 giorno prima</option>
-        <option value="3" selected>3 giorni prima</option>
-        <option value="7">7 giorni prima</option>
-        <option value="14">14 giorni prima</option>
-      </select>
-      
-      <button onclick="saveProduct()" class="w-full bg-emerald-500 text-white py-2 rounded-lg font-bold text-sm">Salva</button>
-    </div>
+  <main class="flex-1 overflow-y-auto pb-28 px-4 pt-4 no-scrollbar">
+    <section id="view-dashboard" class="space-y-4">
+      <div id="products-container" class="space-y-3"></div>
+    </section>
+
+    <!-- FORM AGGIORNATO CON TENDINA AVVISO -->
+    <section id="view-add" class="hidden space-y-4">
+      <div class="bg-white p-5 rounded-2xl border shadow-sm space-y-4">
+        <input type="hidden" id="form-product-id" value="">
+        <input type="text" id="form-name" placeholder="Nome prodotto" class="w-full bg-slate-100 border rounded-xl px-4 py-2.5 text-sm">
+        <input type="date" id="form-expiry" class="w-full bg-slate-100 border rounded-xl px-4 py-2.5 text-sm">
+        
+        <!-- NUOVA TENDINA AVVISO -->
+        <div class="space-y-1">
+          <label class="text-[10px] font-bold text-slate-500 uppercase">Avvisami giorni prima:</label>
+          <select id="form-alert-days" class="w-full bg-slate-100 border rounded-xl px-4 py-2.5 text-sm">
+            <option value="1">1 giorno prima</option>
+            <option value="3" selected>3 giorni prima</option>
+            <option value="7">7 giorni prima</option>
+            <option value="14">14 giorni prima</option>
+          </select>
+        </div>
+
+        <button onclick="saveProduct()" class="w-full py-3 bg-brand-500 text-white rounded-xl font-bold text-sm">Salva</button>
+      </div>
+    </section>
   </main>
 
   <script>
     let db, products = [];
 
-    const req = indexedDB.open("ScanEanDB", 9);
-    req.onupgradeneeded = e => e.target.result.createObjectStore("products", { keyPath: "id" });
-    req.onsuccess = e => { db = e.target.result; loadAll(); };
+    // Inizializzazione DB (Versione 3 per includere alertDays)
+    const dbRequest = indexedDB.open("ScanEanDB", 3);
+    dbRequest.onupgradeneeded = e => {
+      let db = e.target.result;
+      if (!db.objectStoreNames.contains("products")) db.createObjectStore("products", { keyPath: "id" });
+    };
+    dbRequest.onsuccess = e => { db = e.target.result; loadProductsFromDB(); };
 
-    function getExpiryColor(p) {
+    // LOGICA COLORI DINAMICA
+    function getStatusClass(p) {
       const today = new Date(); today.setHours(0,0,0,0);
-      const target = new Date(p.expiry);
-      const diffDays = Math.ceil((target - today) / (1000 * 60 * 60 * 24));
-      const alertThreshold = parseInt(p.alertDays) || 3;
+      const expiry = new Date(p.expiry);
+      const diffDays = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
+      const threshold = parseInt(p.alertDays) || 3;
 
-      if (diffDays < 0) return 'border-l-black';         // Scaduto
-      if (diffDays <= 0) return 'border-l-red-600';      // Scade oggi
-      if (diffDays <= alertThreshold) return 'border-l-red-500'; // Entro la soglia scelta
-      return 'border-l-green-500';                       // Ok
+      if (diffDays < 0) return 'border-l-black';        // Scaduto
+      if (diffDays <= threshold) return 'border-l-red-500'; // Entro la soglia avviso
+      return 'border-l-green-500';                      // OK
     }
 
     function renderProducts() {
       const container = document.getElementById('products-container');
       container.innerHTML = '';
-      
-      [...products].sort((a, b) => new Date(a.expiry) - new Date(b.expiry)).forEach(p => {
+      products.forEach(p => {
         const div = document.createElement('div');
-        div.className = `bg-white p-4 rounded-xl border border-slate-100 border-l-4 ${getExpiryColor(p)} shadow-sm flex justify-between items-center`;
+        div.className = `bg-white p-4 rounded-xl border border-slate-200 border-l-4 ${getStatusClass(p)} shadow-sm flex justify-between items-center`;
         div.innerHTML = `
           <div>
             <p class="text-sm font-bold">${p.name}</p>
-            <p class="text-[10px] text-slate-400">Scadenza: ${p.expiry} (Avviso a -${p.alertDays}gg)</p>
+            <p class="text-[10px] text-slate-400">Scade: ${p.expiry} (Avviso a ${p.alertDays}gg)</p>
           </div>
-          <button onclick="deleteProduct('${p.id}')" class="text-slate-300"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+          <button onclick="deleteProduct('${p.id}')" class="text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
         `;
         container.appendChild(div);
       });
@@ -80,25 +94,22 @@
 
     function saveProduct() {
       const p = {
-        id: 'p_' + Date.now(),
+        id: document.getElementById('form-product-id').value || 'p_' + Date.now(),
         name: document.getElementById('form-name').value,
         expiry: document.getElementById('form-expiry').value,
-        alertDays: document.getElementById('form-alert-days').value
+        alertDays: document.getElementById('form-alert-days').value // SALVA IL VALORE
       };
-      if(!p.name || !p.expiry) return alert("Compila tutto!");
       
-      db.transaction("products", "readwrite").objectStore("products").put(p).onsuccess = loadAll;
+      const transaction = db.transaction(["products"], "readwrite");
+      transaction.objectStore("products").put(p);
+      transaction.oncomplete = () => { loadProductsFromDB(); };
     }
 
-    function loadAll() {
+    function loadProductsFromDB() {
       db.transaction("products").objectStore("products").getAll().onsuccess = e => {
-        products = e.target.result || [];
+        products = e.target.result;
         renderProducts();
       };
-    }
-
-    function deleteProduct(id) {
-      db.transaction("products", "readwrite").objectStore("products").delete(id).onsuccess = loadAll;
     }
   </script>
 </body>
