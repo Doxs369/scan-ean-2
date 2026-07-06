@@ -151,7 +151,7 @@
           <label class="text-xs font-bold text-slate-500">Codice EAN / QR</label>
           <div class="flex gap-2">
             <input type="text" id="form-barcode" placeholder="EAN o QR" class="flex-1 bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-mono text-slate-800">
-            <button onclick="fetchProductInfo()" class="px-4 bg-brand-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1 shadow-sm shrink-0">
+            <button onclick="checkAndAutofillProduct()" class="px-4 bg-brand-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1 shadow-sm shrink-0">
               <i data-lucide="search" class="w-3.5 h-3.5"></i> Cerca
             </button>
           </div>
@@ -159,16 +159,16 @@
 
         <div class="space-y-2">
           <label class="text-xs font-bold text-slate-500 block">Foto Prodotto</label>
-          <div class="flex flex-col items-center justify-center gap-3 p-3 bg-slate-50 border border-dashed border-slate-200 rounded-xl">
+          <div class="flex flex-col items-center justify-center gap-4 p-4 bg-slate-50 border border-dashed border-slate-200 rounded-xl">
             
-            <div id="image-preview-container" class="hidden relative w-32 h-32 rounded-xl overflow-hidden border border-slate-300 shadow-inner bg-white">
+            <div id="image-preview-container" class="hidden relative w-48 h-48 rounded-xl overflow-hidden border border-slate-300 shadow-sm bg-white shrink-0">
               <img id="image-preview" src="" class="w-full h-full object-cover">
-              <button onclick="removeSelectedImage()" class="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full shadow-md hover:bg-red-700 transition">
+              <button onclick="removeSelectedImage()" class="absolute top-2 right-2 bg-red-600 text-white p-1.5 rounded-full shadow-md hover:bg-red-700 transition z-20">
                 <i data-lucide="x" class="w-4 h-4"></i>
               </button>
             </div>
 
-            <label class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:bg-slate-100 rounded-xl text-xs font-semibold text-slate-700 cursor-pointer transition shadow-sm">
+            <label class="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 hover:bg-slate-100 rounded-xl text-xs font-semibold text-slate-700 cursor-pointer transition shadow-sm">
               <i data-lucide="camera" class="w-4 h-4 text-brand-500"></i>
               <span>Scatta o Cambia Foto</span>
               <input type="file" id="form-image" accept="image/*" capture="environment" class="hidden" onchange="handleImageUpload(event)">
@@ -347,7 +347,6 @@
       removeSelectedImage();
     }
 
-    // Carica e seleziona AUTOMATICAMENTE la vecchia foto associata all'EAN
     function checkAndAutofillProduct() {
       const barcode = document.getElementById('form-barcode').value.trim();
       if (!barcode) {
@@ -362,14 +361,13 @@
         document.getElementById('form-category').value = saved.category || "Dispensa";
         
         if (saved.image) {
-          currentProductImageBase64 = saved.image; // Seleziona automaticamente l'immagine storica
+          currentProductImageBase64 = saved.image;
           displayImagePreview(saved.image);
         } else {
           removeSelectedImage();
         }
-        showToast("Prodotto e foto abbinati in automatico!");
+        showToast("Prodotto e foto abbinati!");
       } else {
-        // Se l'EAN non esiste, pulisci i campi e rimuovi la vecchia anteprima
         document.getElementById('form-name').value = "";
         document.getElementById('form-brand').value = "";
         removeSelectedImage();
@@ -396,7 +394,6 @@
         return;
       }
 
-      // Salva o aggiorna l'EAN nel catalogo permanente delle immagini
       if (barcode) {
         globalCatalog[barcode] = {
           name: name,
