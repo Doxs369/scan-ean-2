@@ -70,8 +70,8 @@
     
     <div class="flex gap-2">
       <div class="text-center px-2 py-0.5 bg-brand-50 border border-brand-100 rounded-md">
-        <div id="stat-expired" class="text-xs font-bold text-red-600">0</div>
-        <div class="text-[8px] uppercase text-red-500 font-bold">In Dispensa</div>
+        <div id="stat-expired" class="text-xs font-bold text-brand-600">0</div>
+        <div class="text-[8px] uppercase text-brand-500 font-bold">In Dispensa</div>
       </div>
     </div>
   </header>
@@ -163,7 +163,7 @@
             
             <div id="image-preview-container" class="hidden relative w-48 h-48 rounded-xl overflow-hidden border border-slate-300 shadow-sm bg-white shrink-0">
               <img id="image-preview" src="" class="w-full h-full object-cover">
-              <button onclick="removeSelectedImage()" class="absolute top-2 right-2 bg-red-600 text-white p-1.5 rounded-full shadow-md hover:bg-red-700 transition z-20">
+              <button type="button" onclick="removeSelectedImage()" class="absolute top-2 right-2 bg-red-600 text-white p-1.5 rounded-full shadow-md hover:bg-red-700 transition z-20">
                 <i data-lucide="x" class="w-4 h-4"></i>
               </button>
             </div>
@@ -207,10 +207,10 @@
         </div>
 
         <div class="flex gap-3 pt-2">
-          <button onclick="switchView('dashboard')" class="flex-1 py-3 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700">
+          <button type="button" onclick="switchView('dashboard')" class="flex-1 py-3 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700">
             Annulla
           </button>
-          <button onclick="saveProduct()" class="flex-1 py-3 bg-brand-500 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1 shadow-sm">
+          <button type="button" onclick="saveProduct()" class="flex-1 py-3 bg-brand-500 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1 shadow-sm">
             <i data-lucide="check" class="w-4 h-4"></i> Salva
           </button>
         </div>
@@ -328,7 +328,6 @@
       }
     }
 
-    // Pulisce l'anteprima visiva della foto
     function removeSelectedImage() {
       currentProductImageBase64 = "";
       const container = document.getElementById('image-preview-container');
@@ -348,7 +347,6 @@
       removeSelectedImage();
     }
 
-    // Funzione di riempimento automatico migliorata e agganciata correttamente
     function checkAndAutofillProduct() {
       const barcode = document.getElementById('form-barcode').value.trim();
       if (!barcode) {
@@ -363,14 +361,13 @@
         document.getElementById('form-category').value = saved.category || "Dispensa";
         
         if (saved.image) {
-          currentProductImageBase64 = saved.image; // Seleziona e aggancia la foto in automatico
-          displayImagePreview(saved.image);       // La mostra nel riquadro gigante
+          currentProductImageBase64 = saved.image;
+          displayImagePreview(saved.image);
         } else {
           removeSelectedImage();
         }
-        showToast("Prodotto e foto abbinati!");
+        showToast("Prodotto e foto caricati!");
       } else {
-        // Pulisce se l'EAN non ha storico per evitare sovrascritture errate
         document.getElementById('form-name').value = "";
         document.getElementById('form-brand').value = "";
         removeSelectedImage();
@@ -397,7 +394,6 @@
         return;
       }
 
-      // Memorizza o aggiorna le informazioni legate al codice EAN nel catalogo permanente
       if (barcode) {
         globalCatalog[barcode] = {
           name: name,
@@ -422,10 +418,35 @@
       products.push(newProduct);
       localStorage.setItem('scanean_products', JSON.stringify(products));
       
+      // Reset dei filtri per mostrare subito tutto in lista senza blocchi
+      activeCategory = 'all';
+      const catButtons = document.querySelectorAll('.category-btn');
+      catButtons.forEach(btn => {
+        btn.classList.remove('bg-brand-500', 'text-white', 'active');
+        btn.classList.add('bg-white', 'text-slate-600', 'border', 'border-slate-200');
+      });
+      const allBtn = document.querySelector(".category-btn[onclick*='all']");
+      if (allBtn) {
+        allBtn.classList.remove('bg-white', 'text-slate-600', 'border', 'border-slate-200');
+        allBtn.classList.add('bg-brand-500', 'text-white', 'active');
+      }
+
       resetForm();
       showToast("Salvataggio completato!");
       updateDashboardStats();
       switchView('dashboard');
+      renderProducts();
+    }
+
+    function filterCategory(event, category) {
+      activeCategory = category;
+      const buttons = document.querySelectorAll('.category-btn');
+      buttons.forEach(btn => {
+        btn.classList.remove('bg-brand-500', 'text-white', 'active');
+        btn.classList.add('bg-white', 'text-slate-600', 'border', 'border-slate-200');
+      });
+      event.currentTarget.classList.remove('bg-white', 'text-slate-600', 'border', 'border-slate-200');
+      event.currentTarget.classList.add('bg-brand-500', 'text-white', 'active');
       renderProducts();
     }
 
