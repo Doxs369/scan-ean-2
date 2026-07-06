@@ -150,7 +150,7 @@
           </div>
         </div>
 
-        <!-- SEZIONE FOTO PRODOTTO (Anteprima Ingrandita w-48 h-48) -->
+        <!-- SEZIONE FOTO PRODOTTO -->
         <div class="space-y-2">
           <label class="text-xs font-bold text-slate-500 block">Foto Prodotto</label>
           <div class="flex flex-col items-center justify-center gap-4 p-4 bg-slate-50 border border-dashed border-slate-200 rounded-xl">
@@ -286,7 +286,7 @@
       const activeView = document.getElementById(`view-${viewId}`);
       if (activeView) activeView.classList.remove('hidden');
       const activeNav = document.getElementById(`nav-${viewId}`);
-      if (activeNav) { activeNav.classList.remove('text-slate-400'); activeNav.mathbf{classList}.add('text-brand-500'); }
+      if (activeNav) { activeNav.classList.remove('text-slate-400'); activeNav.classList.add('text-brand-500'); }
 
       if (viewId !== 'scan') stopScanning();
       if (viewId === 'stats') renderStats();
@@ -342,14 +342,12 @@
       removeSelectedImage();
     }
 
-    // CARICA SOLO L'IMMAGINE SE L'EAN ESISTE GIÀ, lasciando vuoti i dati di scadenza/note per creare un nuovo prodotto!
     function checkAndAutofillProduct() {
       const barcode = document.getElementById('form-barcode').value.trim();
       if (!barcode) return;
 
       if (globalCatalog[barcode]) {
         const saved = globalCatalog[barcode];
-        // Compila nome e marca storici se presenti
         document.getElementById('form-name').value = saved.name || "";
         document.getElementById('form-brand').value = saved.brand || "";
         
@@ -376,17 +374,19 @@
         return;
       }
 
-      // Salva l'immagine nell'archivio fotografico generale legato all'EAN
       if (barcode) {
         globalCatalog[barcode] = {
           name: name,
           brand: brand,
           image: currentProductImageBase64 || (globalCatalog[barcode] ? globalCatalog[barcode].image : "")
         };
-        localStorage.setItem('scanean_catalog', JSON.stringify(globalCatalog));
+        try {
+          localStorage.setItem('scanean_catalog', JSON.stringify(globalCatalog));
+        } catch(e) {
+          showToast("Memoria piena! Cancella qualche dato dai Report.");
+        }
       }
 
-      // Crea un NUOVO prodotto indipendente nella dispensa corrente
       const newProduct = {
         id: 'p_' + Date.now(),
         name,
@@ -399,7 +399,12 @@
       };
 
       products.push(newProduct);
-      localStorage.setItem('scanean_products', JSON.stringify(products));
+      try {
+        localStorage.setItem('scanean_products', JSON.stringify(products));
+      } catch(e) {
+        showToast("Impossibile salvare: memoria del telefono piena!");
+        return;
+      }
       
       resetForm();
       showToast("Prodotto salvato in dispensa!");
@@ -490,6 +495,7 @@
       document.getElementById('stat-thrown').textContent = thrownCount;
     }
 
+    // PULIZIA DATABASE IN CASO DI BLOCCHI DI MEMORIA
     function clearDatabase() {
       if (confirm("Vuoi azzerare la dispensa e tutto il catalogo foto storico?")) {
         products = []; globalCatalog = {}; consumedCount = 0; thrownCount = 0;
