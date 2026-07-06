@@ -183,4 +183,331 @@
             <label class="text-xs font-bold text-slate-500">Marca</label>
             <input type="text" id="form-brand" placeholder="Es. Barilla" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800">
           </div>
-          <div class="space-y-1.5
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-slate-500">Posizione</label>
+            <select id="form-category" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800">
+              <option value="Frigorifero">Frigorifero</option>
+              <option value="Dispensa" selected>Dispensa</option>
+              <option value="Congelatore">Congelatore</option>
+              <option value="Casa e Farmaci">Casa e Farmaci</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-slate-500">Data di Scadenza *</label>
+          <input type="date" id="form-expiry" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800">
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-slate-500">Note Personalizzate</label>
+          <textarea id="form-notes" rows="2" placeholder="Note..." class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-800 resize-none"></textarea>
+        </div>
+
+        <div class="flex gap-3 pt-2">
+          <button onclick="switchView('dashboard')" class="flex-1 py-3 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700">
+            Annulla
+          </button>
+          <button onclick="saveProduct()" class="flex-1 py-3 bg-brand-500 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1 shadow-sm">
+            <i data-lucide="check" class="w-4 h-4"></i> Salva
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-stats" class="hidden space-y-4">
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <h2 class="text-md font-bold text-slate-900 flex items-center gap-2">
+          <i data-lucide="bar-chart-3" class="w-5 h-5 text-brand-500"></i> Statistiche
+        </h2>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="p-3 bg-slate-50 rounded-xl text-center">
+            <div id="stat-consumed" class="text-2xl font-bold text-brand-500">0</div>
+            <p class="text-[10px] text-slate-500">Consumati</p>
+          </div>
+          <div class="p-3 bg-slate-50 rounded-xl text-center">
+            <div id="stat-thrown" class="text-2xl font-bold text-red-500">0</div>
+            <p class="text-[10px] text-slate-500">Sprecati</p>
+          </div>
+        </div>
+        <button onclick="clearDatabase()" class="w-full py-3 bg-red-50 text-red-600 rounded-xl text-xs font-semibold">
+          Resetta Tutto il Database
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <nav class="bg-white fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 flex items-center justify-around py-3 px-6 shadow-sm shrink-0">
+    <button onclick="switchView('dashboard')" id="nav-dashboard" class="flex flex-col items-center gap-1 text-brand-500">
+      <i data-lucide="layout-grid" class="w-5 h-5"></i>
+      <span class="text-[9px] font-bold">Dispensa</span>
+    </button>
+    <button onclick="startScanning(); switchView('scan')" id="nav-scan" class="flex flex-col items-center justify-center w-14 h-14 bg-brand-500 text-white rounded-full -translate-y-4 shadow-md border-4 border-slate-50">
+      <i data-lucide="scan-line" class="w-6 h-6"></i>
+    </button>
+    <button onclick="switchView('stats')" id="nav-stats" class="flex flex-col items-center gap-1 text-slate-400">
+      <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+      <span class="text-[9px] font-bold">Report</span>
+    </button>
+  </nav>
+
+  <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 py-2.5 px-4 bg-slate-900/90 text-white rounded-full text-xs font-semibold opacity-0 transition-opacity pointer-events-none">
+    <span id="toast-text">Messaggio</span>
+  </div>
+
+  <script>
+    let products = JSON.parse(localStorage.getItem('scanean_products')) || [];
+    // Catalogo globale unico indicizzato per EAN (salva l'associazione info + immagine a lungo termine)
+    let globalCatalog = JSON.parse(localStorage.getItem('scanean_catalog')) || {};
+    
+    let consumedCount = parseInt(localStorage.getItem('scanean_consumed')) || 0;
+    let thrownCount = parseInt(localStorage.getItem('scanean_thrown')) || 0;
+    let activeCategory = 'all';
+    let html5QrScanner = null;
+    let currentProductImageBase64 = "";
+
+    lucide.createIcons();
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderProducts();
+      updateDashboardStats();
+      
+      document.getElementById('form-barcode').addEventListener('input', () => {
+        checkAndAutofillProduct();
+      });
+    });
+
+    function switchView(viewId) {
+      const views = ['dashboard', 'scan', 'add', 'stats'];
+      views.forEach(v => {
+        const el = document.getElementById(`view-${v}`);
+        if (el) el.classList.add('hidden');
+        const navBtn = document.getElementById(`nav-${v}`);
+        if (navBtn) { navBtn.classList.remove('text-brand-500'); navBtn.classList.add('text-slate-400'); }
+      });
+
+      const activeView = document.getElementById(`view-${viewId}`);
+      if (activeView) activeView.classList.remove('hidden');
+      const activeNav = document.getElementById(`nav-${viewId}`);
+      if (activeNav) { activeNav.classList.remove('text-slate-400'); activeNav.classList.add('text-brand-500'); }
+
+      if (viewId !== 'scan') stopScanning();
+      if (viewId === 'stats') renderStats();
+    }
+
+    function showToast(text) {
+      const toast = document.getElementById('toast');
+      const toastText = document.getElementById('toast-text');
+      if (toast && toastText) {
+        toastText.textContent = text;
+        toast.classList.remove('opacity-0');
+        setTimeout(() => { toast.classList.add('opacity-0'); }, 2000);
+      }
+    }
+
+    function handleImageUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        currentProductImageBase64 = e.target.result;
+        displayImagePreview(currentProductImageBase64);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function displayImagePreview(base64Data) {
+      const container = document.getElementById('image-preview-container');
+      const img = document.getElementById('image-preview');
+      if (container && img) {
+        img.src = base64Data;
+        container.classList.remove('hidden');
+      }
+    }
+
+    function removeSelectedImage() {
+      currentProductImageBase64 = "";
+      const container = document.getElementById('image-preview-container');
+      const img = document.getElementById('image-preview');
+      if (container && img) { img.src = ""; container.classList.add('hidden'); }
+    }
+
+    function resetForm() {
+      document.getElementById('form-name').value = '';
+      document.getElementById('form-barcode').value = '';
+      document.getElementById('form-brand').value = '';
+      document.getElementById('form-expiry').value = '';
+      document.getElementById('form-notes').value = '';
+      removeSelectedImage();
+    }
+
+    // Controllo automatico EAN per mantenere associazione foto e blocco dati
+    function checkAndAutofillProduct() {
+      const barcode = document.getElementById('form-barcode').value.trim();
+      if (!barcode) return;
+
+      if (globalCatalog[barcode]) {
+        const saved = globalCatalog[barcode];
+        document.getElementById('form-name').value = saved.name || "";
+        document.getElementById('form-brand').value = saved.brand || "";
+        document.getElementById('form-category').value = saved.category || "Dispensa";
+        
+        if (saved.image) {
+          currentProductImageBase64 = saved.image;
+          displayImagePreview(currentProductImageBase64);
+        } else {
+          removeSelectedImage();
+        }
+        showToast("Prodotto esistente riconosciuto!");
+      }
+    }
+
+    // Cliccando su un elemento della lista ti porta alla modifica/inserimento nuova scadenza
+    function openProductDetails(barcode) {
+      resetForm();
+      switchView('add');
+      document.getElementById('form-barcode').value = barcode;
+      checkAndAutofillProduct();
+    }
+
+    function saveProduct() {
+      const name = document.getElementById('form-name').value.trim();
+      const barcode = document.getElementById('form-barcode').value.trim();
+      const brand = document.getElementById('form-brand').value.trim();
+      const category = document.getElementById('form-category').value;
+      const expiry = document.getElementById('form-expiry').value;
+      const notes = document.getElementById('form-notes').value.trim();
+
+      if (!name || !expiry) {
+        showToast("Inserisci nome e scadenza!");
+        return;
+      }
+
+      // Se c'è un EAN, assicura la memorizzazione persistente di foto e anagrafica
+      if (barcode) {
+        globalCatalog[barcode] = {
+          name: name,
+          brand: brand,
+          category: category,
+          image: currentProductImageBase64 || (globalCatalog[barcode] ? globalCatalog[barcode].image : "")
+        };
+        localStorage.setItem('scanean_catalog', JSON.stringify(globalCatalog));
+      }
+
+      const newProduct = {
+        id: 'p_' + Date.now(),
+        name,
+        barcode,
+        brand,
+        category,
+        expiry,
+        notes,
+        image: currentProductImageBase64 || (barcode ? globalCatalog[barcode].image : "")
+      };
+
+      products.push(newProduct);
+      localStorage.setItem('scanean_products', JSON.stringify(products));
+      
+      resetForm();
+      showToast("Scadenza salvata!");
+      updateDashboardStats();
+      switchView('dashboard');
+      renderProducts();
+    }
+
+    function renderProducts() {
+      const container = document.getElementById('products-container');
+      const emptyState = document.getElementById('empty-state');
+      if (!container) return;
+      container.innerHTML = '';
+
+      let filtered = products.filter(p => activeCategory === 'all' || p.category === activeCategory);
+
+      if (filtered.length === 0) {
+        emptyState.classList.remove('hidden');
+      } else {
+        emptyState.classList.add('hidden');
+        filtered.forEach(p => {
+          const div = document.createElement('div');
+          // Aggiunto "cursor-pointer" e onclick sul box per portarti alla schermata dati al click
+          div.className = 'bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-3 cursor-pointer active:bg-slate-50 transition';
+          
+          const finalImg = p.image || (p.barcode && globalCatalog[p.barcode] ? globalCatalog[p.barcode].image : "");
+          const imageHtml = finalImg 
+            ? `<div class="w-10 h-10 rounded-lg overflow-hidden border border-slate-100 shrink-0"><img src="${finalImg}" class="w-full h-full object-cover"></div>`
+            : `<div class="w-10 h-10 bg-slate-50 border border-slate-100 rounded-lg flex items-center justify-center text-slate-300 shrink-0"><i data-lucide="package" class="w-5 h-5"></i></div>`;
+
+          div.innerHTML = `
+            <div class="flex items-center gap-3 min-w-0 flex-1" onclick="openProductDetails('${p.barcode || ''}')">
+              ${imageHtml}
+              <div class="min-w-0 flex-1">
+                <span class="text-xs font-bold text-slate-900 block truncate">${p.name}</span>
+                <p class="text-[11px] text-slate-500 truncate">${p.brand || 'Nessuna marca'} &bull; ${p.category}</p>
+                <p class="text-[10px] text-brand-600 font-semibold mt-0.5">Scadenza: ${p.expiry}</p>
+              </div>
+            </div>
+            <div class="flex gap-1.5 z-10">
+              <button onclick="event.stopPropagation(); consumeProduct('${p.id}')" class="p-2 bg-brand-50 text-brand-600 rounded-lg"><i data-lucide="check" class="w-4 h-4"></i></button>
+              <button onclick="event.stopPropagation(); throwProduct('${p.id}')" class="p-2 bg-red-50 text-red-600 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            </div>
+          `;
+          container.appendChild(div);
+        });
+      }
+      lucide.createIcons();
+    }
+
+    function consumeProduct(id) {
+      products = products.filter(p => p.id !== id);
+      consumedCount++;
+      localStorage.setItem('scanean_products', JSON.stringify(products));
+      localStorage.setItem('scanean_consumed', consumedCount);
+      updateDashboardStats();
+      renderProducts();
+    }
+
+    function throwProduct(id) {
+      products = products.filter(p => p.id !== id);
+      thrownCount++;
+      localStorage.setItem('scanean_products', JSON.stringify(products));
+      localStorage.setItem('scanean_thrown', thrownCount);
+      updateDashboardStats();
+      renderProducts();
+    }
+
+    function updateDashboardStats() {
+      document.getElementById('stat-expired').textContent = products.length;
+    }
+
+    function renderStats() {
+      document.getElementById('stat-consumed').textContent = consumedCount;
+      document.getElementById('stat-thrown').textContent = thrownCount;
+    }
+
+    function clearDatabase() {
+      if (confirm("Sei sicuro di voler cancellare tutto (compreso il catalogo foto)?")) {
+        products = []; globalCatalog = {}; consumedCount = 0; thrownCount = 0;
+        localStorage.clear();
+        updateDashboardStats(); renderProducts();
+        switchView('dashboard');
+      }
+    }
+
+    function startScanning() {
+      if (!html5QrScanner) html5QrScanner = new Html5Qrcode("scanner-reader");
+      html5QrScanner.start({ facingMode: "environment" }, { fps: 15, qrbox: 200 }, (decodedText) => {
+        stopScanning();
+        document.getElementById('form-barcode').value = decodedText;
+        switchView('add');
+        checkAndAutofillProduct();
+      }, () => {});
+    }
+
+    function stopScanning() {
+      if (html5QrScanner && html5QrScanner.isScanning) html5QrScanner.stop().catch(()=>{});
+    }
+  </script>
+</body>
+</html>
