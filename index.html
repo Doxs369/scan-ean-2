@@ -256,7 +256,7 @@
     let isCameraActive = false;
     let db = null;
 
-    // INIZIALIZZAZIONE DI INDEXEDDB PER SPAZIO ILLIMITATO
+    // APERTURA SICURA DI INDEXEDDB
     const dbRequest = indexedDB.open("ScanEanDB", 1);
     
     dbRequest.onupgradeneeded = function(event) {
@@ -272,10 +272,11 @@
     };
 
     dbRequest.onerror = function() {
-      showToast("Errore nell'inizializzazione della memoria capiente.");
+      showToast("Errore nell'inizializzazione della memoria.");
     };
 
-    function loadProductsFromDB() {
+    function loadProductsFromDB(callback) {
+      if (!db) return;
       const transaction = db.transaction(["products"], "readonly");
       const store = transaction.objectStore("products");
       const request = store.getAll();
@@ -284,6 +285,7 @@
         products = request.result || [];
         renderProducts();
         updateDashboardStats();
+        if (callback) callback();
       };
     }
 
@@ -326,7 +328,6 @@
       }
     }
 
-    // FUNZIONE DI AUTOCAMPIONAMENTO DA EAN CONOSCIUTO
     function checkExistingEan(barcodeText) {
       if (!barcodeText || document.getElementById('form-product-id').value !== '') return;
       
@@ -354,7 +355,6 @@
       }
     }
 
-    // LOGICA DI CONTROLLO DINAMICA DEL PULSANTE FOTOCAMERA
     function handleCameraAction() {
       if (!isCameraActive) {
         const video = document.getElementById('product-video');
@@ -394,7 +394,7 @@
         
         ctx.drawImage(video, sx, sy, minDim, minDim, 0, 0, canvas.width, canvas.height);
         
-        const base64 = canvas.toDataURL('image/jpeg', 0.6); // Ottimizzazione compressione foto
+        const base64 = canvas.toDataURL('image/jpeg', 0.6);
         document.getElementById('form-photo').value = base64;
         
         const preview = document.getElementById('product-preview');
@@ -488,36 +488,27 @@
       let isNew = false;
 
       if (productId) {
-        const index = products.findIndex(p => p.id === productId);
-        if (index !== -1) {
-          products[index] = {
-            id: productId, name, barcode, brand, category, expiry, notes, photo
-          };
-          targetProduct = products[index];
-        }
+        targetProduct = { id: productId, name, barcode, brand, category, expiry, notes, photo };
       } else {
         isNew = true;
-        targetProduct = {
-          id: 'p_' + Date.now(), name, barcode, brand, category, expiry, notes, photo
-        };
-        products.push(targetProduct);
+        targetProduct = { id: 'p_' + Date.now(), name, barcode, brand, category, expiry, notes, photo };
       }
 
-      // SALVATAGGIO IN INDEXEDDB (Spazio virtualmente illimitato)
+      // USO DI TRANSAZIONI PROTETTE CON ONCOMPLETE SINCRONIZZATO
       const transaction = db.transaction(["products"], "readwrite");
       const store = transaction.objectStore("products");
       store.put(targetProduct);
 
-      transaction.onsuccess = function() {
+      transaction.oncomplete = function() {
         showToast(isNew ? "Prodotto salvato!" : "Prodotto modificato!");
         resetForm();
-        updateDashboardStats();
-        switchView('dashboard');
-        renderProducts();
+        loadProductsFromDB(() => {
+          switchView('dashboard');
+        });
       };
 
       transaction.onerror = function() {
-        showToast("Errore durante il salvataggio nel database capiente.");
+        showToast("Errore durante il salvataggio.");
       };
     }
 
@@ -587,30 +578,26 @@
     }
 
     function consumeProduct(id) {
-      products = products.filter(p => p.id !== id);
       consumedCount++;
       localStorage.setItem('scanean_consumed', consumedCount);
       
       const transaction = db.transaction(["products"], "readwrite");
       transaction.objectStore("products").delete(id);
       
-      transaction.onsuccess = function() {
-        updateDashboardStats();
-        renderProducts();
+      transaction.oncomplete = function() {
+        loadProductsFromDB();
       };
     }
 
     function throwProduct(id) {
-      products = products.filter(p => p.id !== id);
       thrownCount++;
       localStorage.setItem('scanean_thrown', thrownCount);
       
       const transaction = db.transaction(["products"], "readwrite");
       transaction.objectStore("products").delete(id);
       
-      transaction.onsuccess = function() {
-        updateDashboardStats();
-        renderProducts();
+      transaction.oncomplete = function() {
+        loadProductsFromDB();
       };
     }
 
@@ -628,13 +615,13 @@
       if (confirm("Vuoi azzerare completamente la dispensa?")) {
         const transaction = db.transaction(["products"], "readwrite");
         const store = transaction.objectStore("products");
-        const clearRequest = store.clear();
+        store.clear();
         
-        clearRequest.onsuccess = function() {
-          products = []; consumedCount = 0; thrownCount = 0;
+        transaction.oncomplete = function() {
+          consumedCount = 0; thrownCount = 0;
           localStorage.removeItem('scanean_consumed');
           localStorage.removeItem('scanean_thrown');
-          updateDashboardStats(); renderProducts();
+          loadProductsFromDB();
           switchView('dashboard');
           showToast("Database azzerato.");
         };
@@ -647,9 +634,7 @@
         stopScanning();
         resetForm();
         document.getElementById('form-barcode').value = decodedText;
-        
         checkExistingEan(decodedText);
-        
         switchView('add');
       }, () => {});
     }
