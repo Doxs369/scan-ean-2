@@ -139,6 +139,30 @@
         
         <input type="hidden" id="form-product-id" value="">
 
+        <div class="space-y-2 border border-slate-200 rounded-xl p-3 bg-slate-50 flex flex-col items-center justify-center">
+          <span class="text-xs font-bold text-slate-500 self-start">Foto del Prodotto (Abbina a EAN)</span>
+          
+          <div class="w-full relative flex items-center justify-center bg-white rounded-lg overflow-hidden border border-slate-200 min-h-[120px]">
+            <video id="product-video" autoplay playsinline class="hidden w-full max-h-44 object-cover bg-black"></video>
+            <img id="product-preview" class="hidden w-24 h-24 object-cover rounded-md my-2 border shadow-sm" src="">
+            
+            <div id="photo-placeholder" class="text-center py-4">
+              <i data-lucide="camera" class="w-6 h-6 text-slate-300 mx-auto mb-1"></i>
+              <span class="text-[11px] text-slate-400 block font-medium">Nessuna foto associata</span>
+            </div>
+          </div>
+
+          <div class="flex gap-2 w-full justify-center">
+            <button type="button" id="btn-start-camera" onclick="startCamera()" class="flex-1 py-2 bg-slate-200 text-slate-700 border border-slate-300 rounded-lg text-xs font-bold uppercase tracking-wider text-center active:bg-slate-300">
+              Attiva Camera
+            </button>
+            <button type="button" id="btn-take-photo" onclick="takePhoto()" class="hidden flex-1 py-2 bg-brand-500 text-white rounded-lg text-xs font-bold uppercase tracking-wider text-center shadow-sm active:bg-brand-600">
+              Scatta Foto
+            </button>
+          </div>
+          <input type="hidden" id="form-photo" value="">
+        </div>
+
         <div class="space-y-1.5">
           <label class="text-xs font-bold text-slate-500">Codice EAN / QR</label>
           <input type="text" id="form-barcode" placeholder="EAN o QR" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-mono text-slate-800">
@@ -175,7 +199,7 @@
         </div>
 
         <div class="flex gap-3 pt-2">
-          <button type="button" onclick="switchView('dashboard')" class="flex-1 py-3 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700">
+          <button type="button" onclick="stopCamera(); resetForm(); switchView('dashboard')" class="flex-1 py-3 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700">
             Annulla
           </button>
           <button type="button" onclick="saveProduct()" class="flex-1 py-3 bg-brand-500 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1 shadow-sm">
@@ -213,7 +237,7 @@
       <i data-lucide="layout-grid" class="w-5 h-5"></i>
       <span class="text-[9px] font-bold">Dispensa</span>
     </button>
-    <button onclick="startScanning(); switchView('scan')" id="nav-scan" class="flex flex-col items-center justify-center w-14 h-14 bg-brand-500 text-white rounded-full -translate-y-4 shadow-md border-4 border-slate-50">
+    <button onclick="resetForm(); startScanning(); switchView('scan')" id="nav-scan" class="flex flex-col items-center justify-center w-14 h-14 bg-brand-500 text-white rounded-full -translate-y-4 shadow-md border-4 border-slate-50">
       <i data-lucide="scan-line" class="w-6 h-6"></i>
     </button>
     <button onclick="switchView('stats')" id="nav-stats" class="flex flex-col items-center gap-1 text-slate-400">
@@ -232,6 +256,7 @@
     let thrownCount = parseInt(localStorage.getItem('scanean_thrown')) || 0;
     let activeCategory = 'all';
     let html5QrScanner = null;
+    let cameraStream = null;
 
     lucide.createIcons();
 
@@ -245,16 +270,25 @@
       views.forEach(v => {
         const el = document.getElementById(`view-${v}`);
         if (el) el.classList.add('hidden');
+        
         const navBtn = document.getElementById(`nav-${v}`);
-        if (navBtn) { navBtn.classList.remove('text-brand-500'); navBtn.classList.add('text-slate-400'); }
+        if (navBtn && v !== 'scan') {
+          navBtn.classList.remove('text-brand-500');
+          navBtn.classList.add('text-slate-400');
+        }
       });
 
       const activeView = document.getElementById(`view-${viewId}`);
       if (activeView) activeView.classList.remove('hidden');
+      
       const activeNav = document.getElementById(`nav-${viewId}`);
-      if (activeNav) { activeNav.classList.remove('text-slate-400'); activeNav.classList.add('text-brand-500'); }
+      if (activeNav && viewId !== 'scan') {
+        activeNav.classList.remove('text-slate-400');
+        activeNav.classList.add('text-brand-500');
+      }
 
       if (viewId !== 'scan') stopScanning();
+      if (viewId !== 'add') stopCamera();
       if (viewId === 'stats') renderStats();
     }
 
@@ -268,21 +302,87 @@
       }
     }
 
+    // LOGICA FUNZIONALE FOTOCAMERA PRODOTTI
+    function startCamera() {
+      const video = document.getElementById('product-video');
+      const placeholder = document.getElementById('photo-placeholder');
+      const preview = document.getElementById('product-preview');
+      
+      placeholder.classList.add('hidden');
+      preview.classList.add('hidden');
+      video.classList.remove('hidden');
+
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false })
+        .then(stream => {
+          cameraStream = stream;
+          video.srcObject = stream;
+          document.getElementById('btn-take-photo').classList.remove('hidden');
+        })
+        .catch(err => {
+          showToast("Impossibile accedere alla fotocamera");
+          resetPhotoUI();
+        });
+    }
+
+    function takePhoto() {
+      const video = document.getElementById('product-video');
+      const canvas = document.createElement('canvas');
+      
+      canvas.width = 240;
+      canvas.height = 240;
+      const ctx = canvas.getContext('2d');
+      
+      const minDim = Math.min(video.videoWidth, video.videoHeight);
+      const sx = (video.videoWidth - minDim) / 2;
+      const sy = (video.videoHeight - minDim) / 2;
+      
+      ctx.drawImage(video, sx, sy, minDim, minDim, 0, 0, canvas.width, canvas.height);
+      
+      const base64 = canvas.toDataURL('image/jpeg', 0.7);
+      document.getElementById('form-photo').value = base64;
+      
+      const preview = document.getElementById('product-preview');
+      preview.src = base64;
+      preview.classList.remove('hidden');
+      
+      stopCamera();
+    }
+
+    function stopCamera() {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+      }
+      document.getElementById('product-video').classList.add('hidden');
+      document.getElementById('btn-take-photo').classList.add('hidden');
+    }
+
+    function resetPhotoUI() {
+      stopCamera();
+      document.getElementById('form-photo').value = '';
+      document.getElementById('product-preview').classList.add('hidden');
+      document.getElementById('product-preview').src = '';
+      document.getElementById('photo-placeholder').classList.remove('hidden');
+    }
+
     function resetForm() {
       document.getElementById('form-product-id').value = '';
       document.getElementById('form-name').value = '';
       document.getElementById('form-barcode').value = '';
       document.getElementById('form-brand').value = '';
+      document.getElementById('form-category').value = 'Dispensa';
       document.getElementById('form-expiry').value = '';
       document.getElementById('form-notes').value = '';
+      resetPhotoUI();
       document.getElementById('form-title').innerHTML = `<i data-lucide="plus-circle" class="w-5 h-5 text-brand-500"></i> Dati Prodotto`;
       lucide.createIcons();
     }
 
-    // NUOVA FUNZIONE: Carica i dati del prodotto cliccato nel form e apre la schermata
     function editProduct(id) {
       const product = products.find(p => p.id === id);
       if (!product) return;
+
+      resetForm();
 
       document.getElementById('form-product-id').value = product.id;
       document.getElementById('form-name').value = product.name || '';
@@ -291,6 +391,14 @@
       document.getElementById('form-category').value = product.category || 'Dispensa';
       document.getElementById('form-expiry').value = product.expiry || '';
       document.getElementById('form-notes').value = product.notes || '';
+      
+      if (product.photo) {
+        document.getElementById('form-photo').value = product.photo;
+        const preview = document.getElementById('product-preview');
+        preview.src = product.photo;
+        preview.classList.remove('hidden');
+        document.getElementById('photo-placeholder').classList.add('hidden');
+      }
       
       document.getElementById('form-title').innerHTML = `<i data-lucide="edit" class="w-5 h-5 text-brand-500"></i> Modifica Prodotto`;
       lucide.createIcons();
@@ -306,6 +414,7 @@
       const category = document.getElementById('form-category').value;
       const expiry = document.getElementById('form-expiry').value;
       const notes = document.getElementById('form-notes').value.trim();
+      const photo = document.getElementById('form-photo').value;
 
       if (!name || !expiry) {
         showToast("Inserisci nome e data di scadenza!");
@@ -313,22 +422,21 @@
       }
 
       if (productId) {
-        // MODIFICA: Aggiorna il prodotto esistente
         const index = products.findIndex(p => p.id === productId);
         if (index !== -1) {
           products[index] = {
-            ...products[index],
+            id: productId,
             name: name,
             barcode: barcode,
             brand: brand,
             category: category,
             expiry: expiry,
-            notes: notes
+            notes: notes,
+            photo: photo
           };
-          showToast("Prodotto aggiornato!");
+          showToast("Prodotto modificato con successo!");
         }
       } else {
-        // NUOVO INSERIMENTO: Crea un nuovo prodotto
         const newProduct = {
           id: 'p_' + Date.now(),
           name: name,
@@ -336,7 +444,8 @@
           brand: brand,
           category: category,
           expiry: expiry,
-          notes: notes
+          notes: notes,
+          photo: photo
         };
         products.push(newProduct);
         showToast("Prodotto salvato!");
@@ -345,7 +454,7 @@
       try {
         localStorage.setItem('scanean_products', JSON.stringify(products));
       } catch(e) {
-        showToast("Errore di memoria! Svuota i Report.");
+        showToast("Errore di memoria! Libera spazio cancellando vecchi prodotti.");
         return;
       }
       
@@ -369,15 +478,18 @@
         emptyState.classList.add('hidden');
         filtered.forEach(p => {
           const div = document.createElement('div');
-          // Aggiunto cursor-pointer e onclick per riaprire i dettagli cliccando sulla scheda
           div.className = 'bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-3 cursor-pointer active:bg-slate-50 transition-colors';
           div.setAttribute('onclick', `editProduct('${p.id}')`);
           
+          const imgHTML = p.photo 
+            ? `<img src="${p.photo}" class="w-10 h-10 object-cover rounded-lg border border-slate-100 shrink-0">`
+            : `<div class="w-10 h-10 bg-slate-50 border border-slate-100 rounded-lg flex items-center justify-center text-slate-300 shrink-0">
+                <i data-lucide="package" class="w-5 h-5 text-brand-500"></i>
+               </div>`;
+
           div.innerHTML = `
             <div class="flex items-center gap-3 min-w-0 flex-1">
-              <div class="w-10 h-10 bg-slate-50 border border-slate-100 rounded-lg flex items-center justify-center text-slate-300 shrink-0">
-                <i data-lucide="package" class="w-5 h-5 text-brand-500"></i>
-              </div>
+              ${imgHTML}
               <div class="min-w-0 flex-1">
                 <span class="text-xs font-bold text-slate-900 block truncate">${p.name}</span>
                 <p class="text-[11px] text-slate-500 truncate">${p.brand || 'Nessuna marca'} &bull; ${p.category}</p>
@@ -431,6 +543,7 @@
       if (el) el.textContent = products.length;
     }
 
+    // STATS
     function renderStats() {
       document.getElementById('stat-consumed').textContent = consumedCount;
       document.getElementById('stat-thrown').textContent = thrownCount;
