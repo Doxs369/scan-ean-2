@@ -78,30 +78,14 @@
 
   <main class="flex-1 overflow-y-auto pb-28 px-4 pt-4 no-scrollbar">
     
-    <!-- DASHBOARD DI DISPENSA -->
     <section id="view-dashboard" class="space-y-4">
       <div class="relative">
         <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
-        <input type="text" id="search-input" placeholder="Cerca per nome, marca o codice..." class="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 text-slate-800 placeholder-slate-400 shadow-sm">
+        <input type="text" id="search-input" oninput="renderProducts()" placeholder="Cerca per nome, marca o codice..." class="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 text-slate-800 placeholder-slate-400 shadow-sm">
       </div>
 
-      <div class="flex gap-2 overflow-x-auto no-scrollbar py-1">
-        <button onclick="filterCategory(event, 'all')" class="category-btn active px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all bg-brand-500 text-white shadow-sm">
-          Tutti
-        </button>
-        <button onclick="filterCategory(event, 'Frigorifero')" class="category-btn px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all bg-white text-slate-600 border border-slate-200 hover:border-slate-300 shadow-sm">
-          ❄️ Frigorifero
-        </button>
-        <button onclick="filterCategory(event, 'Dispensa')" class="category-btn px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all bg-white text-slate-600 border border-slate-200 hover:border-slate-300 shadow-sm">
-          🌾 Dispensa
-        </button>
-        <button onclick="filterCategory(event, 'Congelatore')" class="category-btn px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all bg-white text-slate-600 border border-slate-200 hover:border-slate-300 shadow-sm">
-          🧊 Congelatore
-        </button>
-        <button onclick="filterCategory(event, 'Casa e Farmaci')" class="category-btn px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all bg-white text-slate-600 border border-slate-200 hover:border-slate-300 shadow-sm">
-          💊 Casa e Farmaci
-        </button>
-      </div>
+      <div id="category-filters" class="flex gap-2 overflow-x-auto no-scrollbar py-1">
+        </div>
 
       <div id="products-container" class="space-y-3"></div>
       
@@ -114,7 +98,6 @@
       </div>
     </section>
 
-    <!-- SCHERMATA SCANNER -->
     <section id="view-scan" class="hidden space-y-4">
       <div class="bg-white rounded-2xl overflow-hidden relative border border-slate-200 shadow-sm flex flex-col items-center justify-center min-h-[240px]">
         <div id="scanner-reader" class="w-full aspect-[4/3] bg-black"></div>
@@ -131,7 +114,6 @@
       </div>
     </section>
 
-    <!-- SCHERMATA DETTAGLIO / INSERIMENTO -->
     <section id="view-add" class="hidden space-y-4">
       <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
         <div class="flex justify-between items-center">
@@ -142,14 +124,11 @@
         
         <input type="hidden" id="form-product-id" value="">
 
-        <!-- SEZIONE UNICA FOTOCAMERA PRODOTTO CON ICONA DI SCATTO DIRETTO -->
         <div class="space-y-2 border border-slate-200 rounded-xl p-3 bg-slate-50 flex flex-col items-center justify-center">
           <span class="text-xs font-bold text-slate-500 self-start">Foto del Prodotto (Abbina a EAN)</span>
           
           <div class="w-full relative flex items-center justify-center bg-white rounded-lg overflow-hidden border border-slate-200 min-h-[130px]">
-            <!-- Finestra Video per inquadratura -->
             <video id="product-video" autoplay playsinline class="hidden w-full max-h-44 object-cover bg-black"></video>
-            <!-- Anteprima dell'immagine scattata -->
             <img id="product-preview" class="hidden w-28 h-28 object-cover rounded-md my-2 border shadow-sm" src="">
             
             <div id="photo-placeholder" class="text-center py-5">
@@ -158,7 +137,6 @@
             </div>
           </div>
 
-          <!-- Pulsante Unico con Icona Fotocamera Dinamico -->
           <button type="button" id="btn-camera-action" onclick="handleCameraAction()" class="w-full py-2.5 bg-brand-500 text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm active:bg-brand-600 transition-all">
             <i id="camera-icon" data-lucide="camera" class="w-4 h-4"></i>
             <span id="camera-text">Scatta Foto Prodotto</span>
@@ -180,14 +158,16 @@
             <label class="text-xs font-bold text-slate-500">Marca</label>
             <input type="text" id="form-brand" placeholder="Es. Barilla" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800">
           </div>
+          
           <div class="space-y-1.5">
             <label class="text-xs font-bold text-slate-500">Posizione</label>
-            <select id="form-category" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800">
-              <option value="Frigorifero">Frigorifero</option>
-              <option value="Dispensa" selected>Dispensa</option>
-              <option value="Congelatore">Congelatore</option>
-              <option value="Casa e Farmaci">Casa e Farmaci</option>
-            </select>
+            <div class="flex gap-1.5">
+              <select id="form-category" class="flex-1 bg-slate-100 border border-slate-200 rounded-xl px-2 py-2.5 text-xs text-slate-800 focus:outline-none">
+                </select>
+              <button type="button" onclick="addNewCategory()" class="p-2.5 bg-brand-500 text-white rounded-xl hover:bg-brand-600 shadow-sm flex items-center justify-center shrink-0">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -212,7 +192,6 @@
       </div>
     </section>
 
-    <!-- REPORT / IMPOSTAZIONI -->
     <section id="view-stats" class="hidden space-y-4">
       <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
         <h2 class="text-md font-bold text-slate-900 flex items-center gap-2">
@@ -255,20 +234,143 @@
   </div>
 
   <script>
-    let products = JSON.parse(localStorage.getItem('scanean_products')) || [];
+    let products = [];
+    // Posizioni base predefinite
+    let categories = ["Frigorifero", "Dispensa", "Congelatore", "Casa e Farmaci"];
     let consumedCount = parseInt(localStorage.getItem('scanean_consumed')) || 0;
     let thrownCount = parseInt(localStorage.getItem('scanean_thrown')) || 0;
     let activeCategory = 'all';
     let html5QrScanner = null;
     let cameraStream = null;
     let isCameraActive = false;
+    let db = null;
+
+    // APERTURA / AGGIORNAMENTO DI INDEXEDDB CON SUPPORTO PER LE CATEGORIE
+    const dbRequest = indexedDB.open("ScanEanDB", 2);
+    
+    dbRequest.onupgradeneeded = function(event) {
+      let database = event.target.result;
+      if (!database.objectStoreNames.contains("products")) {
+        database.createObjectStore("products", { keyPath: "id" });
+      }
+      if (!database.objectStoreNames.contains("categories")) {
+        database.createObjectStore("categories", { autoIncrement: true });
+      }
+    };
+
+    dbRequest.onsuccess = function(event) {
+      db = event.target.result;
+      loadCategoriesFromDB(() => {
+        loadProductsFromDB();
+      });
+    };
+
+    dbRequest.onerror = function() {
+      showToast("Errore nell'inizializzazione della memoria.");
+    };
+
+    function loadCategoriesFromDB(callback) {
+      if (!db) return;
+      const transaction = db.transaction(["categories"], "readonly");
+      const store = transaction.objectStore("categories");
+      const request = store.getAll();
+
+      request.onsuccess = function() {
+        if (request.result && request.result.length > 0) {
+          categories = request.result;
+        } else {
+          // Se vuoto, salviamo quelle base la prima volta
+          saveInitialCategories();
+        }
+        updateCategorySelectOptions();
+        renderCategoryFilters();
+        if (callback) callback();
+      };
+    }
+
+    function saveInitialCategories() {
+      const transaction = db.transaction(["categories"], "readwrite");
+      const store = transaction.objectStore("categories");
+      categories.forEach(cat => store.add(cat));
+    }
+
+    function loadProductsFromDB(callback) {
+      if (!db) return;
+      const transaction = db.transaction(["products"], "readonly");
+      const store = transaction.objectStore("products");
+      const request = store.getAll();
+
+      request.onsuccess = function() {
+        products = request.result || [];
+        renderCategoryFilters(); // Ridisegna i filtri per aggiornare lo stato di selezione
+        renderProducts();
+        updateDashboardStats();
+        if (callback) callback();
+      };
+    }
+
+    // AGGIUNGE UNA NUOVA POSIZIONE PERSONALIZZATA
+    function addNewCategory() {
+      const newCat = prompt("Inserisci il nome della nuova posizione (es. Cantina, Dispensa Secondaria):");
+      if (!newCat || newCat.trim() === "") return;
+      
+      const cleanedCat = newCat.trim();
+      
+      if (categories.includes(cleanedCat)) {
+        showToast("Questa posizione esiste già!");
+        return;
+      }
+
+      categories.push(cleanedCat);
+      
+      const transaction = db.transaction(["categories"], "readwrite");
+      const store = transaction.objectStore("categories");
+      store.add(cleanedCat);
+
+      transaction.oncomplete = function() {
+        showToast("Nuova posizione aggiunta!");
+        updateCategorySelectOptions();
+        renderCategoryFilters();
+        document.getElementById('form-category').value = cleanedCat;
+      };
+    }
+
+    function updateCategorySelectOptions() {
+      const select = document.getElementById('form-category');
+      if (!select) return;
+      select.innerHTML = '';
+      categories.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat;
+        option.textContent = cat;
+        if(cat === "Dispensa") option.selected = true;
+        select.appendChild(option);
+      });
+    }
+
+    function renderCategoryFilters() {
+      const container = document.getElementById('category-filters');
+      if (!container) return;
+      container.innerHTML = '';
+
+      // Tasto "Tutti" sempre presente
+      const allBtn = document.createElement('button');
+      allBtn.className = `category-btn px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${activeCategory === 'all' ? 'bg-brand-500 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200'}`;
+      allBtn.textContent = 'Tutti';
+      allBtn.onclick = (e) => filterCategory(e, 'all');
+      container.appendChild(allBtn);
+
+      // Generazione pulsanti per ogni categoria esistente
+      categories.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.className = `category-btn px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${activeCategory === cat ? 'bg-brand-500 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200'}`;
+        btn.textContent = cat;
+        btn.onclick = (e) => filterCategory(e, cat);
+        container.appendChild(btn);
+      });
+    }
 
     lucide.createIcons();
-
-    window.addEventListener('DOMContentLoaded', () => {
-      renderProducts();
-      updateDashboardStats();
-    });
 
     function switchView(viewId) {
       const views = ['dashboard', 'scan', 'add', 'stats'];
@@ -307,7 +409,6 @@
       }
     }
 
-    // FUNZIONE DI AUTOCAMPIONAMENTO DA EAN CONOSCIUTO
     function checkExistingEan(barcodeText) {
       if (!barcodeText || document.getElementById('form-product-id').value !== '') return;
       
@@ -335,7 +436,6 @@
       }
     }
 
-    // LOGICA DI CONTROLLO DINAMICA DEL PULSANTE FOTOCAMERA
     function handleCameraAction() {
       if (!isCameraActive) {
         const video = document.getElementById('product-video');
@@ -375,7 +475,7 @@
         
         ctx.drawImage(video, sx, sy, minDim, minDim, 0, 0, canvas.width, canvas.height);
         
-        const base64 = canvas.toDataURL('image/jpeg', 0.7);
+        const base64 = canvas.toDataURL('image/jpeg', 0.6);
         document.getElementById('form-photo').value = base64;
         
         const preview = document.getElementById('product-preview');
@@ -465,56 +565,49 @@
         return;
       }
 
+      let targetProduct;
+      let isNew = false;
+
       if (productId) {
-        const index = products.findIndex(p => p.id === productId);
-        if (index !== -1) {
-          products[index] = {
-            id: productId,
-            name: name,
-            barcode: barcode,
-            brand: brand,
-            category: category,
-            expiry: expiry,
-            notes: notes,
-            photo: photo
-          };
-          showToast("Prodotto modificato con successo!");
-        }
+        targetProduct = { id: productId, name, barcode, brand, category, expiry, notes, photo };
       } else {
-        const newProduct = {
-          id: 'p_' + Date.now(),
-          name: name,
-          barcode: barcode,
-          brand: brand,
-          category: category,
-          expiry: expiry,
-          notes: notes,
-          photo: photo
-        };
-        products.push(newProduct);
-        showToast("Prodotto salvato!");
+        isNew = true;
+        targetProduct = { id: 'p_' + Date.now(), name, barcode, brand, category, expiry, notes, photo };
       }
-      
-      try {
-        localStorage.setItem('scanean_products', JSON.stringify(products));
-      } catch(e) {
-        showToast("Errore di memoria! Libera spazio cancellando vecchi prodotti.");
-        return;
-      }
-      
-      resetForm();
-      updateDashboardStats();
-      switchView('dashboard');
-      renderProducts();
+
+      const transaction = db.transaction(["products"], "readwrite");
+      const store = transaction.objectStore("products");
+      store.put(targetProduct);
+
+      transaction.oncomplete = function() {
+        showToast(isNew ? "Prodotto salvato!" : "Prodotto modificato!");
+        resetForm();
+        loadProductsFromDB(() => {
+          switchView('dashboard');
+        });
+      };
+
+      transaction.onerror = function() {
+        showToast("Errore durante il salvataggio.");
+      };
     }
 
     function renderProducts() {
       const container = document.getElementById('products-container');
       const emptyState = document.getElementById('empty-state');
+      const searchQuery = document.getElementById('search-input').value.toLowerCase().trim();
+      
       if (!container) return;
       container.innerHTML = '';
 
-      let filtered = products.filter(p => activeCategory === 'all' || p.category === activeCategory);
+      let filtered = products.filter(p => {
+        const matchesCategory = (activeCategory === 'all' || p.category === activeCategory);
+        const matchesSearch = !searchQuery || 
+                              p.name.toLowerCase().includes(searchQuery) || 
+                              (p.brand && p.brand.toLowerCase().includes(searchQuery)) || 
+                              (p.barcode && p.barcode.toLowerCase().includes(searchQuery));
+        return matchesCategory && matchesSearch;
+      });
 
       if (filtered.length === 0) {
         emptyState.classList.remove('hidden');
@@ -565,21 +658,27 @@
     }
 
     function consumeProduct(id) {
-      products = products.filter(p => p.id !== id);
       consumedCount++;
-      localStorage.setItem('scanean_products', JSON.stringify(products));
       localStorage.setItem('scanean_consumed', consumedCount);
-      updateDashboardStats();
-      renderProducts();
+      
+      const transaction = db.transaction(["products"], "readwrite");
+      transaction.objectStore("products").delete(id);
+      
+      transaction.oncomplete = function() {
+        loadProductsFromDB();
+      };
     }
 
     function throwProduct(id) {
-      products = products.filter(p => p.id !== id);
       thrownCount++;
-      localStorage.setItem('scanean_products', JSON.stringify(products));
       localStorage.setItem('scanean_thrown', thrownCount);
-      updateDashboardStats();
-      renderProducts();
+      
+      const transaction = db.transaction(["products"], "readwrite");
+      transaction.objectStore("products").delete(id);
+      
+      transaction.oncomplete = function() {
+        loadProductsFromDB();
+      };
     }
 
     function updateDashboardStats() {
@@ -594,10 +693,23 @@
 
     function clearDatabase() {
       if (confirm("Vuoi azzerare completamente la dispensa?")) {
-        products = []; consumedCount = 0; thrownCount = 0;
-        localStorage.clear();
-        updateDashboardStats(); renderProducts();
-        switchView('dashboard');
+        const transaction = db.transaction(["products", "categories"], "readwrite");
+        transaction.objectStore("products").clear();
+        transaction.objectStore("categories").clear();
+        
+        transaction.oncomplete = function() {
+          consumedCount = 0; thrownCount = 0;
+          localStorage.removeItem('scanean_consumed');
+          localStorage.removeItem('scanean_thrown');
+          // Ripristina posizioni predefinite
+          categories = ["Frigorifero", "Dispensa", "Congelatore", "Casa e Farmaci"];
+          saveInitialCategories();
+          updateCategorySelectOptions();
+          activeCategory = 'all';
+          loadProductsFromDB();
+          switchView('dashboard');
+          showToast("Database azzerato.");
+        };
       }
     }
 
@@ -607,10 +719,7 @@
         stopScanning();
         resetForm();
         document.getElementById('form-barcode').value = decodedText;
-        
-        // Verifica immediata se l'EAN scansionato esiste già
         checkExistingEan(decodedText);
-        
         switchView('add');
       }, () => {});
     }
