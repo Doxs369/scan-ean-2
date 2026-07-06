@@ -37,13 +37,6 @@
       overscroll-behavior-y: contain;
       -webkit-tap-highlight-color: transparent;
     }
-    .light-card {
-      background: rgba(255, 255, 255, 0.9);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border: 1px solid rgba(226, 232, 240, 0.8);
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-    }
     .no-scrollbar::-webkit-scrollbar {
       display: none;
     }
@@ -130,37 +123,23 @@
           <div class="p-3 bg-accent-50 rounded-full text-accent-500">
             <i data-lucide="shield-alert" class="w-8 h-8"></i>
           </div>
-          <p class="text-xs font-bold text-slate-800">La fotocamera richiede HTTPS (Connessione Sicura)</p>
-          <p class="text-[10px] text-slate-500 max-w-[240px] leading-relaxed">
-            Per motivi di sicurezza, i browser bloccano la fotocamera sui file locali (<code class="bg-slate-100 px-1 py-0.5 rounded text-red-500">file://</code>). 
-            Carica il file su **tiiny.host** per testarla sul cellulare, oppure usa l'inserimento manuale qui sotto.
-          </p>
-          <button onclick="switchView('add')" class="px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-xs font-semibold shadow-sm transition">
+          <p class="text-xs font-bold text-slate-800">La fotocamera richiede HTTPS</p>
+          <button onclick="switchView('add')" class="px-4 py-2 bg-brand-500 text-white rounded-xl text-xs font-semibold shadow-sm">
             Vai a Inserimento Manuale
           </button>
         </div>
 
         <div id="scanner-reader" class="w-full aspect-[4/3] bg-black"></div>
         <div class="absolute inset-0 border-2 border-brand-500/50 pointer-events-none rounded-2xl"></div>
-        
-        <div id="scanner-overlay-box" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-56 h-36 border-2 border-dashed border-accent-500 rounded flex items-center justify-center pointer-events-none">
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-56 h-36 border-2 border-dashed border-accent-500 rounded flex items-center justify-center pointer-events-none">
           <span class="text-[10px] bg-slate-900/90 text-white px-2 py-0.5 rounded font-mono font-bold">ALLINEA EAN / QR</span>
         </div>
       </div>
 
       <div class="flex gap-3">
-        <button onclick="stopScanning(); switchView('add')" class="flex-1 py-3 bg-white border border-slate-200 hover:border-slate-300 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 text-slate-700 shadow-sm">
+        <button onclick="stopScanning(); switchView('add')" class="flex-1 py-3 bg-white border border-slate-200 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 text-slate-700 shadow-sm">
           <i data-lucide="keyboard" class="w-4 h-4 text-brand-500"></i> Inserisci manuale
         </button>
-        <button onclick="toggleFlash()" id="flash-btn" class="px-4 py-3 bg-white border border-slate-200 rounded-xl flex items-center justify-center shadow-sm">
-          <i data-lucide="zap" class="w-4 h-4 text-slate-400"></i>
-        </button>
-      </div>
-
-      <div class="p-4 bg-brand-50 border border-brand-100 rounded-xl text-xs text-brand-700 space-y-1.5">
-        <p class="font-bold flex items-center gap-1"><i data-lucide="zap" class="w-3.5 h-3.5 text-brand-500"></i> Scansione Super Rapida Attiva</p>
-        <p class="text-slate-600">L'app legge in tempo reale codici <strong>EAN-13, EAN-8, QR Code, Code-128, UPC-A</strong> e altri.</p>
-        <p class="text-slate-500">Codice demo: <code class="bg-brand-100 px-1 py-0.5 rounded text-brand-700 select-all font-bold">8002270014901</code> (Latte Granarolo).</p>
       </div>
     </section>
 
@@ -168,28 +147,26 @@
       <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
         <div class="flex justify-between items-center">
           <h2 class="text-md font-bold text-slate-900 flex items-center gap-2">
-            <i data-lucide="plus-circle" class="w-5 h-5 text-brand-500"></i> Inserisci Manualmente
+            <i data-lucide="plus-circle" class="w-5 h-5 text-brand-500"></i> Dati Prodotto
           </h2>
-          <span class="text-[10px] text-slate-400 font-mono">EAN e Dati Prodotto</span>
         </div>
         
         <div class="space-y-1.5">
           <label class="text-xs font-bold text-slate-500">Codice EAN / QR</label>
           <div class="flex gap-2">
-            <input type="text" id="form-barcode" placeholder="EAN (es. 8002270014901) o QR" class="flex-1 bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 text-slate-800 font-mono">
-            <button onclick="fetchProductInfo()" class="px-4 bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-xs font-semibold flex items-center gap-1 shadow-sm shrink-0">
+            <input type="text" id="form-barcode" placeholder="EAN o QR" class="flex-1 bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-mono text-slate-800">
+            <button onclick="fetchProductInfo()" class="px-4 bg-brand-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1 shadow-sm shrink-0">
               <i data-lucide="search" class="w-3.5 h-3.5"></i> Cerca
             </button>
           </div>
         </div>
 
-        <!-- Sezione Foto Prodotto -->
         <div class="space-y-1.5">
           <label class="text-xs font-bold text-slate-500">Foto Prodotto</label>
           <div class="flex items-center gap-3">
-            <label class="flex items-center gap-2 px-4 py-2.5 bg-slate-100 border border-slate-200 hover:bg-slate-200 rounded-xl text-xs font-semibold text-slate-700 cursor-pointer transition">
+            <label class="flex items-center gap-2 px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 cursor-pointer transition">
               <i data-lucide="camera" class="w-4 h-4 text-brand-500"></i>
-              <span>Scatta / Scegli Foto</span>
+              <span>Scatta Foto</span>
               <input type="file" id="form-image" accept="image/*" capture="environment" class="hidden" onchange="handleImageUpload(event)">
             </label>
             <div id="image-preview-container" class="hidden relative w-12 h-12 rounded-lg overflow-hidden border border-slate-200">
@@ -204,15 +181,15 @@
         <div class="grid grid-cols-2 gap-3">
           <div class="space-y-1.5 col-span-2">
             <label class="text-xs font-bold text-slate-500">Nome Prodotto *</label>
-            <input type="text" id="form-name" placeholder="Inserisci il nome del prodotto" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 text-slate-800">
+            <input type="text" id="form-name" placeholder="Nome del prodotto" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800">
           </div>
           <div class="space-y-1.5">
             <label class="text-xs font-bold text-slate-500">Marca</label>
-            <input type="text" id="form-brand" placeholder="Es. Barilla" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 text-slate-800">
+            <input type="text" id="form-brand" placeholder="Es. Barilla" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800">
           </div>
           <div class="space-y-1.5">
             <label class="text-xs font-bold text-slate-500">Posizione</label>
-            <select id="form-category" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-brand-500 text-slate-800">
+            <select id="form-category" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800">
               <option value="Frigorifero">Frigorifero</option>
               <option value="Dispensa" selected>Dispensa</option>
               <option value="Congelatore">Congelatore</option>
@@ -223,19 +200,19 @@
 
         <div class="space-y-1.5">
           <label class="text-xs font-bold text-slate-500">Data di Scadenza *</label>
-          <input type="date" id="form-expiry" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 text-slate-800">
+          <input type="date" id="form-expiry" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800">
         </div>
 
         <div class="space-y-1.5">
           <label class="text-xs font-bold text-slate-500">Note Personalizzate</label>
-          <textarea id="form-notes" rows="2" placeholder="Note..." class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-brand-500 text-slate-800 resize-none"></textarea>
+          <textarea id="form-notes" rows="2" placeholder="Note..." class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-800 resize-none"></textarea>
         </div>
 
         <div class="flex gap-3 pt-2">
-          <button onclick="switchView('dashboard')" class="flex-1 py-3 bg-slate-100 border border-slate-200 hover:bg-slate-200 rounded-xl text-xs font-semibold text-slate-700">
+          <button onclick="switchView('dashboard')" class="flex-1 py-3 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700">
             Annulla
           </button>
-          <button onclick="saveProduct()" class="flex-1 py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1 shadow-sm">
+          <button onclick="saveProduct()" class="flex-1 py-3 bg-brand-500 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1 shadow-sm">
             <i data-lucide="check" class="w-4 h-4"></i> Salva Prodotto
           </button>
         </div>
@@ -243,250 +220,85 @@
     </section>
 
     <section id="view-stats" class="hidden space-y-4">
-      <div id="premium-promo-card" class="p-5 rounded-2xl border border-accent-200 bg-accent-50/80 space-y-3 shadow-sm">
-        <h3 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-          <i data-lucide="sparkles" class="w-4 h-4 text-accent-500 animate-bounce"></i> Rimuovi Pubblicità per Sempre
-        </h3>
-        <p class="text-xs text-slate-600">Con un costo fisso di soli <strong class="text-accent-600">1.99€</strong> una tantum, sblocca l'app completa.</p>
-        <button onclick="openPaypalModal()" class="w-full py-2.5 bg-accent-500 hover:bg-accent-600 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-1 shadow-sm">
-          Sblocca Premium &bull; 1.99€
-        </button>
-      </div>
-
       <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
         <h2 class="text-md font-bold text-slate-900 flex items-center gap-2">
-          <i data-lucide="bar-chart-3" class="w-5 h-5 text-brand-500"></i> Statistiche Sprechi
+          <i data-lucide="bar-chart-3" class="w-5 h-5 text-brand-500"></i> Statistiche
         </h2>
-        
         <div class="grid grid-cols-2 gap-3">
-          <div class="p-3 bg-slate-50 border border-slate-100 rounded-xl text-center">
+          <div class="p-3 bg-slate-50 rounded-xl text-center">
             <div id="stat-consumed" class="text-2xl font-bold text-brand-500">0</div>
-            <p class="text-[10px] text-slate-500 mt-0.5">Consumati</p>
+            <p class="text-[10px] text-slate-500">Consumati</p>
           </div>
-          <div class="p-3 bg-slate-50 border border-slate-100 rounded-xl text-center">
+          <div class="p-3 bg-slate-50 rounded-xl text-center">
             <div id="stat-thrown" class="text-2xl font-bold text-red-500">0</div>
-            <p class="text-[10px] text-slate-500 mt-0.5">Buttati (Spreco)</p>
+            <p class="text-[10px] text-slate-500">Sprecati</p>
           </div>
         </div>
-
-        <div class="p-4 bg-slate-50 border border-slate-100 rounded-xl space-y-2">
-          <p class="text-xs font-bold text-slate-700">Tasso di Risparmio</p>
-          <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden border border-slate-100">
-            <div id="waste-ratio-bar" class="bg-brand-500 h-full transition-all duration-500" style="width: 0%"></div>
-          </div>
-          <p id="waste-ratio-text" class="text-[10px] text-slate-500 text-right font-medium">0% Salvato</p>
-        </div>
-
-        <div class="space-y-2">
-          <h3 class="text-xs font-bold text-slate-600">Cronologia Prodotti</h3>
-          <div id="history-container" class="space-y-2 max-h-[160px] overflow-y-auto no-scrollbar"></div>
-        </div>
-
-        <button onclick="clearDatabase()" class="w-full py-3 bg-red-50 border border-red-100 text-red-600 hover:bg-red-100/50 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5">
-          <i data-lucide="trash-2" class="w-4 h-4"></i> Resetta Dispensa
+        <button onclick="clearDatabase()" class="w-full py-3 bg-red-50 text-red-600 rounded-xl text-xs font-semibold">
+          Resetta Tutto
         </button>
       </div>
     </section>
 
   </main>
 
-  <nav class="bg-white fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 flex items-center justify-around py-3 px-6 shadow-[0_-2px_10px_rgba(0,0,0,0.03)]">
+  <nav class="bg-white fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 flex items-center justify-around py-3 px-6 shadow-sm">
     <button onclick="switchView('dashboard')" id="nav-dashboard" class="flex flex-col items-center gap-1 text-brand-500">
       <i data-lucide="layout-grid" class="w-5 h-5"></i>
       <span class="text-[9px] font-bold">Dispensa</span>
     </button>
-    
-    <button onclick="startScanning(); switchView('scan')" id="nav-scan" class="flex flex-col items-center justify-center w-14 h-14 bg-brand-500 text-white rounded-full -translate-y-4 shadow-md shadow-brand-500/30 border-4 border-slate-50 transition-transform active:scale-95">
+    <button onclick="startScanning(); switchView('scan')" id="nav-scan" class="flex flex-col items-center justify-center w-14 h-14 bg-brand-500 text-white rounded-full -translate-y-4 shadow-md border-4 border-slate-50">
       <i data-lucide="scan-line" class="w-6 h-6"></i>
     </button>
-
-    <button onclick="switchView('stats')" id="nav-stats" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+    <button onclick="switchView('stats')" id="nav-stats" class="flex flex-col items-center gap-1 text-slate-400">
       <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
       <span class="text-[9px] font-bold">Report</span>
     </button>
   </nav>
 
-  <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 py-2.5 px-4 bg-slate-900/90 text-white rounded-full text-xs font-semibold shadow-xl opacity-0 transition-opacity duration-300 pointer-events-none flex items-center gap-2">
+  <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 py-2.5 px-4 bg-slate-900/90 text-white rounded-full text-xs font-semibold opacity-0 transition-opacity pointer-events-none">
     <span id="toast-text">Messaggio</span>
-  </div>
-
-  <div id="paypal-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 p-4">
-    <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4 border border-slate-200">
-      <div class="flex justify-between items-center">
-        <h3 class="text-md font-bold text-slate-900 flex items-center gap-1.5">
-          <i data-lucide="shield-check" class="text-brand-500 w-5 h-5"></i> Acquista Premium
-        </h3>
-        <button onclick="closePaypalModal()" class="text-slate-400 hover:text-slate-600">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-      <div class="text-center py-2">
-        <p class="text-xs text-slate-500 font-medium">Scan Ean Premium Upgrade</p>
-        <p class="text-3xl font-black text-slate-900 mt-1">1,99 €</p>
-        <p class="text-[10px] text-slate-400 mt-1">Acquisto una tantum, rimuove la pubblicità per sempre</p>
-      </div>
-      <button onclick="startPaypalFlow()" class="w-full bg-[#ffc439] hover:bg-[#f2ba36] text-[#003087] font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition shadow-sm hover:scale-[1.01]">
-        <span class="italic font-black text-lg">Pay<span class="text-[#0079c1]">Pal</span></span>
-      </button>
-      <div class="text-[9px] text-slate-400 text-center flex items-center justify-center gap-1">
-        <i data-lucide="lock" class="w-3 h-3 text-slate-400"></i> Pagamento sicuro crittografato SSL
-      </div>
-    </div>
-  </div>
-
-  <div id="paypal-flow" class="fixed inset-0 z-[60] hidden flex items-center justify-center bg-black/80 p-4">
-    <div class="bg-white rounded-2xl p-6 max-w-xs w-full shadow-2xl text-center space-y-6">
-      <div id="paypal-step-loading" class="space-y-4 py-4">
-        <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-[#0070ba] border-t-transparent"></div>
-        <p class="text-sm font-bold text-slate-800">Connessione a PayPal...</p>
-      </div>
-      
-      <div id="paypal-step-confirm" class="hidden space-y-4 py-2">
-        <div class="flex justify-center text-[#003087]">
-          <span class="italic font-black text-2xl">Pay<span class="text-[#0079c1]">Pal</span></span>
-        </div>
-        <div class="border-t border-b border-slate-100 py-3 text-left space-y-1.5">
-          <div class="text-[11px] text-slate-500 flex justify-between"><span>Account:</span> <span class="font-bold text-slate-800">cliente@scanean.it</span></div>
-          <div class="text-[11px] text-slate-500 flex justify-between"><span>Prezzo:</span> <span class="font-bold text-slate-800">1,99 €</span></div>
-        </div>
-        <button onclick="confirmPaypalPayment()" class="w-full bg-[#0070ba] hover:bg-[#005ea6] text-white font-bold py-2.5 rounded-xl transition text-xs shadow">
-          Paga Ora (1.99€)
-        </button>
-        <button onclick="cancelPaypalFlow()" class="w-full text-slate-400 hover:text-slate-600 text-xs font-semibold pt-1">
-          Annulla Pagamento
-        </button>
-      </div>
-      
-      <div id="paypal-step-success" class="hidden space-y-4 py-4">
-        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-brand-100 text-brand-600 border border-brand-200">
-          <i data-lucide="check" class="w-6 h-6"></i>
-        </div>
-        <p class="text-sm font-bold text-slate-800">Pagamento Autorizzato!</p>
-        <button onclick="completePaypalFlow()" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-2 rounded-xl transition text-xs shadow-sm">
-          Ritorna alla Dispensa
-        </button>
-      </div>
-    </div>
   </div>
 
   <script>
     let products = JSON.parse(localStorage.getItem('scanean_products')) || [];
+    // DATABASE PERMANENTE DEI CODICI (Risolve il problema della perdita di foto)
+    let globalCatalog = JSON.parse(localStorage.getItem('scanean_catalog')) || {};
+    
     let isPremium = JSON.parse(localStorage.getItem('scanean_premium')) || false;
     let consumedCount = parseInt(localStorage.getItem('scanean_consumed')) || 0;
     let thrownCount = parseInt(localStorage.getItem('scanean_thrown')) || 0;
     let activeCategory = 'all';
     let html5QrScanner = null;
-    let flashEnabled = false;
-    let currentProductImageBase64 = ""; // Memorizza temporaneamente l'immagine caricata
+    let currentProductImageBase64 = "";
 
     lucide.createIcons();
 
     window.addEventListener('DOMContentLoaded', () => {
-      applyPremiumState();
       renderProducts();
       updateDashboardStats();
-      setupSearch();
       
-      // Monitora l'inserimento manuale dell'EAN per cercare corrispondenze storiche
       document.getElementById('form-barcode').addEventListener('input', () => {
         checkAndAutofillProduct();
       });
     });
-
-    function applyPremiumState() {
-      const adBanner = document.getElementById('ad-banner');
-      const premiumBadge = document.getElementById('premium-badge');
-      const premiumPromoCard = document.getElementById('premium-promo-card');
-
-      if (isPremium) {
-        if (adBanner) adBanner.classList.add('hidden');
-        if (premiumBadge) {
-          premiumBadge.textContent = "Premium";
-          premiumBadge.className = "text-[9px] bg-brand-100 text-brand-600 px-1.5 py-0.5 rounded-full font-bold border border-brand-200 animate-pulse";
-        }
-        if (premiumPromoCard) premiumPromoCard.classList.add('hidden');
-      } else {
-        if (adBanner) adBanner.classList.remove('hidden');
-        if (premiumBadge) {
-          premiumBadge.textContent = "Free";
-          premiumBadge.className = "text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full font-medium border border-slate-200";
-        }
-        if (premiumPromoCard) premiumPromoCard.classList.remove('hidden');
-      }
-    }
-
-    function openPaypalModal() {
-      document.getElementById('paypal-modal').classList.remove('hidden');
-    }
-
-    function closePaypalModal() {
-      document.getElementById('paypal-modal').classList.add('hidden');
-    }
-
-    function startPaypalFlow() {
-      closePaypalModal();
-      document.getElementById('paypal-flow').classList.remove('hidden');
-      document.getElementById('paypal-step-loading').classList.remove('hidden');
-      document.getElementById('paypal-step-confirm').classList.add('hidden');
-      document.getElementById('paypal-step-success').classList.add('hidden');
-      
-      setTimeout(() => {
-        document.getElementById('paypal-step-loading').classList.add('hidden');
-        document.getElementById('paypal-step-confirm').classList.remove('hidden');
-      }, 1500);
-    }
-
-    function confirmPaypalPayment() {
-      document.getElementById('paypal-step-confirm').classList.add('hidden');
-      document.getElementById('paypal-step-loading').classList.remove('hidden');
-      
-      setTimeout(() => {
-        document.getElementById('paypal-step-loading').classList.add('hidden');
-        document.getElementById('paypal-step-success').classList.remove('hidden');
-        isPremium = true;
-        localStorage.setItem('scanean_premium', 'true');
-        applyPremiumState();
-      }, 1500);
-    }
-
-    function cancelPaypalFlow() {
-      document.getElementById('paypal-flow').classList.add('hidden');
-    }
-
-    function completePaypalFlow() {
-      document.getElementById('paypal-flow').classList.add('hidden');
-      switchView('dashboard');
-    }
 
     function switchView(viewId) {
       const views = ['dashboard', 'scan', 'add', 'stats'];
       views.forEach(v => {
         const el = document.getElementById(`view-${v}`);
         if (el) el.classList.add('hidden');
-        
         const navBtn = document.getElementById(`nav-${v}`);
-        if (navBtn) {
-          navBtn.classList.remove('text-brand-500');
-          navBtn.classList.add('text-slate-400');
-        }
+        if (navBtn) { navBtn.classList.remove('text-brand-500'); navBtn.classList.add('text-slate-400'); }
       });
 
       const activeView = document.getElementById(`view-${viewId}`);
       if (activeView) activeView.classList.remove('hidden');
-      
       const activeNav = document.getElementById(`nav-${viewId}`);
-      if (activeNav) {
-        activeNav.classList.remove('text-slate-400');
-        activeNav.classList.add('text-brand-500');
-      }
+      if (activeNav) { activeNav.classList.remove('text-slate-400'); activeNav.classList.add('text-brand-500'); }
 
-      if (viewId !== 'scan') {
-        stopScanning();
-      }
-      
-      if (viewId === 'stats') {
-        renderStats();
-      }
+      if (viewId !== 'scan') stopScanning();
+      if (viewId === 'stats') renderStats();
     }
 
     function showToast(text) {
@@ -495,56 +307,10 @@
       if (toast && toastText) {
         toastText.textContent = text;
         toast.classList.remove('opacity-0');
-        setTimeout(() => {
-          toast.classList.add('opacity-0');
-        }, 2000);
+        setTimeout(() => { toast.classList.add('opacity-0'); }, 2000);
       }
     }
 
-    function setupSearch() {
-      const searchInput = document.getElementById('search-input');
-      if (searchInput) {
-        searchInput.addEventListener('input', () => {
-          renderProducts();
-        });
-      }
-    }
-
-    function filterCategory(event, category) {
-      activeCategory = category;
-      document.querySelectorAll('.category-btn').forEach(btn => {
-        btn.classList.remove('bg-brand-500', 'text-white');
-        btn.classList.add('bg-white', 'text-slate-600', 'border', 'border-slate-200');
-      });
-      event.currentTarget.classList.remove('bg-white', 'text-slate-600', 'border', 'border-slate-200');
-      event.currentTarget.classList.add('bg-brand-500', 'text-white');
-      renderProducts();
-    }
-
-    function getDaysToExpiry(expiryDateStr) {
-      const today = new Date();
-      today.setHours(0,0,0,0);
-      const expiry = new Date(expiryDateStr);
-      expiry.setHours(0,0,0,0);
-      const diffTime = expiry - today;
-      return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    }
-
-    function updateDashboardStats() {
-      let expired = 0;
-      let warning = 0;
-      
-      products.forEach(p => {
-        const days = getDaysToExpiry(p.expiry);
-        if (days < 0) expired++;
-        else if (days <= 3) warning++;
-      });
-
-      document.getElementById('stat-expired').textContent = expired;
-      document.getElementById('stat-warning').textContent = warning;
-    }
-
-    // Gestione Caricamento Immagine
     function handleImageUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -570,110 +336,28 @@
       currentProductImageBase64 = "";
       const container = document.getElementById('image-preview-container');
       const img = document.getElementById('image-preview');
-      const fileInput = document.getElementById('form-image');
-      if (container && img) {
-        img.src = "";
-        container.classList.add('hidden');
-      }
-      if (fileInput) fileInput.value = "";
+      if (container && img) { img.src = ""; container.classList.add('hidden'); }
     }
 
-    // Cerca nel database se l'EAN esiste già e precompila anche la vecchia foto
+    // Controllo catalogo permanente per riassociare SEMPRE la foto memorizzata
     function checkAndAutofillProduct() {
       const barcode = document.getElementById('form-barcode').value.trim();
       if (!barcode) return;
 
-      // Cerca un prodotto esistente con lo stesso EAN per prenderne i dati pregressi
-      const existingProduct = products.find(p => p.barcode === barcode);
-      
-      if (existingProduct) {
-        document.getElementById('form-name').value = existingProduct.name || "";
-        document.getElementById('form-brand').value = existingProduct.brand || "";
-        document.getElementById('form-category').value = existingProduct.category || "Dispensa";
+      if (globalCatalog[barcode]) {
+        const saved = globalCatalog[barcode];
+        document.getElementById('form-name').value = saved.name || "";
+        document.getElementById('form-brand').value = saved.brand || "";
+        document.getElementById('form-category').value = saved.category || "Dispensa";
         
-        if (existingProduct.image) {
-          currentProductImageBase64 = existingProduct.image;
+        if (saved.image) {
+          currentProductImageBase64 = saved.image;
           displayImagePreview(currentProductImageBase64);
-          showToast("Prodotto e foto recuperati dalla cronologia!");
+          showToast("Foto e dati recuperati dal catalogo!");
         } else {
           removeSelectedImage();
-          showToast("Dati prodotto recuperati!");
         }
       }
-    }
-
-    function renderProducts() {
-      const container = document.getElementById('products-container');
-      const emptyState = document.getElementById('empty-state');
-      const searchVal = document.getElementById('search-input')?.value.toLowerCase() || '';
-
-      if (!container) return;
-      container.innerHTML = '';
-
-      let filtered = products.filter(p => {
-        const matchesCategory = activeCategory === 'all' || p.category === activeCategory;
-        const matchesSearch = p.name.toLowerCase().includes(searchVal) || 
-                              (p.brand && p.brand.toLowerCase().includes(searchVal)) || 
-                              (p.barcode && p.barcode.includes(searchVal));
-        return matchesCategory && matchesSearch;
-      });
-
-      filtered.sort((a, b) => new Date(a.expiry) - new Date(b.expiry));
-
-      if (filtered.length === 0) {
-        emptyState.classList.remove('hidden');
-      } else {
-        emptyState.classList.add('hidden');
-        
-        filtered.forEach((p, idx) => {
-          const days = getDaysToExpiry(p.expiry);
-          let badgeColor = 'bg-green-50 text-green-700 border-green-100';
-          let statusText = `Scade tra ${days} gg`;
-          
-          if (days < 0) {
-            badgeColor = 'bg-red-50 text-red-700 border-red-100 animate-pulse';
-            statusText = `Scaduto da ${Math.abs(days)} gg`;
-          } else if (days === 0) {
-            badgeColor = 'bg-accent-50 text-accent-700 border-accent-100';
-            statusText = "Scade OGGI";
-          } else if (days <= 3) {
-            badgeColor = 'bg-amber-50 text-amber-700 border-amber-100';
-            statusText = `In scadenza (${days} gg)`;
-          }
-
-          const div = document.createElement('div');
-          div.className = 'bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-3';
-          
-          // Integrazione miniatura se la foto è presente
-          const imageHtml = p.image 
-            ? `<div class="w-10 h-10 rounded-lg overflow-hidden border border-slate-100 shrink-0"><img src="${p.image}" class="w-full h-full object-cover"></div>`
-            : `<div class="w-10 h-10 bg-slate-50 border border-slate-100 rounded-lg flex items-center justify-center text-slate-300 shrink-0"><i data-lucide="package" class="w-5 h-5"></i></div>`;
-
-          div.innerHTML = `
-            <div class="flex items-center gap-3 min-w-0 flex-1">
-              ${imageHtml}
-              <div class="min-w-0 flex-1">
-                <div class="flex items-center gap-2">
-                  <span class="text-xs font-bold text-slate-900 truncate">${p.name}</span>
-                  <span class="text-[10px] px-2 py-0.5 rounded-md border font-semibold ${badgeColor}">${statusText}</span>
-                </div>
-                <p class="text-[11px] text-slate-500 mt-0.5 truncate">${p.brand ? p.brand : 'Nessuna marca'} &bull; ${p.category}</p>
-                ${p.notes ? `<p class="text-[10px] text-slate-400 mt-1 italic truncate">"${p.notes}"</p>` : ''}
-              </div>
-            </div>
-            <div class="flex gap-1.5 shrink-0">
-              <button onclick="consumeProduct('${p.id}')" class="p-2 bg-brand-50 hover:bg-brand-100 text-brand-600 rounded-lg transition" title="Consumato">
-                <i data-lucide="check" class="w-4 h-4"></i>
-              </button>
-              <button onclick="throwProduct('${p.id}')" class="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition" title="Buttato">
-                <i data-lucide="trash-2" class="w-4 h-4"></i>
-              </button>
-            </div>
-          `;
-          container.appendChild(div);
-        });
-      }
-      lucide.createIcons();
     }
 
     function saveProduct() {
@@ -685,8 +369,19 @@
       const notes = document.getElementById('form-notes').value.trim();
 
       if (!name || !expiry) {
-        showToast("Inserisci nome e data di scadenza!");
+        showToast("Inserisci nome e scadenza!");
         return;
+      }
+
+      // Se c'è un EAN, memorizzalo o aggiornalo nel catalogo generale a lungo termine
+      if (barcode) {
+        globalCatalog[barcode] = {
+          name: name,
+          brand: brand,
+          category: category,
+          image: currentProductImageBase64 || (globalCatalog[barcode] ? globalCatalog[barcode].image : "")
+        };
+        localStorage.setItem('scanean_catalog', JSON.stringify(globalCatalog));
       }
 
       const newProduct = {
@@ -697,13 +392,12 @@
         category,
         expiry,
         notes,
-        image: currentProductImageBase64 // Salva l'immagine
+        image: currentProductImageBase64 || (barcode ? globalCatalog[barcode].image : "")
       };
 
       products.push(newProduct);
       localStorage.setItem('scanean_products', JSON.stringify(products));
       
-      // Reset form completo
       document.getElementById('form-name').value = '';
       document.getElementById('form-barcode').value = '';
       document.getElementById('form-brand').value = '';
@@ -717,12 +411,51 @@
       renderProducts();
     }
 
+    function renderProducts() {
+      const container = document.getElementById('products-container');
+      const emptyState = document.getElementById('empty-state');
+      if (!container) return;
+      container.innerHTML = '';
+
+      let filtered = products.filter(p => activeCategory === 'all' || p.category === activeCategory);
+
+      if (filtered.length === 0) {
+        emptyState.classList.remove('hidden');
+      } else {
+        emptyState.classList.add('hidden');
+        filtered.forEach(p => {
+          const div = document.createElement('div');
+          div.className = 'bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-3';
+          
+          const finalImg = p.image || (p.barcode && globalCatalog[p.barcode] ? globalCatalog[p.barcode].image : "");
+          const imageHtml = finalImg 
+            ? `<div class="w-10 h-10 rounded-lg overflow-hidden border border-slate-100 shrink-0"><img src="${finalImg}" class="w-full h-full object-cover"></div>`
+            : `<div class="w-10 h-10 bg-slate-50 border border-slate-100 rounded-lg flex items-center justify-center text-slate-300 shrink-0"><i data-lucide="package" class="w-5 h-5"></i></div>`;
+
+          div.innerHTML = `
+            <div class="flex items-center gap-3 min-w-0 flex-1">
+              ${imageHtml}
+              <div class="min-w-0 flex-1">
+                <span class="text-xs font-bold text-slate-900 block truncate">${p.name}</span>
+                <p class="text-[11px] text-slate-500 truncate">${p.brand || 'Nessuna marca'} &bull; ${p.category}</p>
+              </div>
+            </div>
+            <div class="flex gap-1.5">
+              <button onclick="consumeProduct('${p.id}')" class="p-2 bg-brand-50 text-brand-600 rounded-lg"><i data-lucide="check" class="w-4 h-4"></i></button>
+              <button onclick="throwProduct('${p.id}')" class="p-2 bg-red-50 text-red-600 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            </div>
+          `;
+          container.appendChild(div);
+        });
+      }
+      lucide.createIcons();
+    }
+
     function consumeProduct(id) {
       products = products.filter(p => p.id !== id);
       consumedCount++;
       localStorage.setItem('scanean_products', JSON.stringify(products));
       localStorage.setItem('scanean_consumed', consumedCount);
-      showToast("Ottimo! Prodotto consumato.");
       updateDashboardStats();
       renderProducts();
     }
@@ -732,107 +465,39 @@
       thrownCount++;
       localStorage.setItem('scanean_products', JSON.stringify(products));
       localStorage.setItem('scanean_thrown', thrownCount);
-      showToast("Prodotto rimosso (Spreco).");
       updateDashboardStats();
       renderProducts();
+    }
+
+    function updateDashboardStats() {
+      document.getElementById('stat-expired').textContent = products.length;
     }
 
     function renderStats() {
       document.getElementById('stat-consumed').textContent = consumedCount;
       document.getElementById('stat-thrown').textContent = thrownCount;
-      
-      const total = consumedCount + thrownCount;
-      const ratioBar = document.getElementById('waste-ratio-bar');
-      const ratioText = document.getElementById('waste-ratio-text');
-      
-      if (total === 0) {
-        if (ratioBar) ratioBar.style.width = '0%';
-        if (ratioText) ratioText.textContent = '0% Salvato';
-      } else {
-        const percentage = Math.round((consumedCount / total) * 100);
-        if (ratioBar) ratioBar.style.width = `${percentage}%`;
-        if (ratioText) ratioText.textContent = `${percentage}% Salvato`;
-      }
     }
 
     function clearDatabase() {
-      if (confirm("Sei sicuro di voler resettare tutta la tua dispensa e le statistiche?")) {
-        products = [];
-        consumedCount = 0;
-        thrownCount = 0;
-        localStorage.removeItem('scanean_products');
-        localStorage.setItem('scanean_consumed', 0);
-        localStorage.setItem('scanean_thrown', 0);
-        removeSelectedImage();
-        showToast("Dispensa resettata!");
-        updateDashboardStats();
-        renderProducts();
-        if (document.getElementById('view-stats').classList.contains('hidden') === false) {
-          renderStats();
-        }
-      }
-    }
-
-    function fetchProductInfo() {
-      const barcode = document.getElementById('form-barcode').value.trim();
-      if (!barcode) {
-        showToast("Inserisci un codice a barre!");
-        return;
-      }
-      if (barcode === "8002270014901") {
-        document.getElementById('form-name').value = "Latte Parzialmente Scremato UHT";
-        document.getElementById('form-brand').value = "Granarolo";
-        document.getElementById('form-category').value = "Frigorifero";
-        showToast("Prodotto demo trovato!");
-      } else {
-        // Se non è il prodotto demo statico, attiva il controllo nel database storico locale
-        checkAndAutofillProduct();
+      if (confirm("Resettare tutto?")) {
+        products = []; globalCatalog = {}; consumedCount = 0; thrownCount = 0;
+        localStorage.clear();
+        updateDashboardStats(); renderProducts();
       }
     }
 
     function startScanning() {
-      if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
-        document.getElementById('scanner-security-alert').classList.remove('hidden');
-        return;
-      }
-      
-      document.getElementById('scanner-security-alert').classList.add('hidden');
-      
-      if (!html5QrScanner) {
-        html5QrScanner = new Html5Qrcode("scanner-reader");
-      }
-
-      const config = { fps: 15, qrbox: { width: 220, height: 150 } };
-      
-      html5QrScanner.start(
-        { facingMode: "environment" },
-        config,
-        (decodedText) => {
-          stopScanning();
-          document.getElementById('form-barcode').value = decodedText;
-          switchView('add');
-          
-          // Esegue l'autocompilazione inclusa la vecchia immagine
-          if (decodedText === "8002270014901") {
-            fetchProductInfo();
-          } else {
-            checkAndAutofillProduct();
-          }
-        },
-        () => {}
-      ).catch(() => {
-        showToast("Errore di inizializzazione fotocamera.");
-      });
+      if (!html5QrScanner) html5QrScanner = new Html5Qrcode("scanner-reader");
+      html5QrScanner.start({ facingMode: "environment" }, { fps: 15, qrbox: 200 }, (decodedText) => {
+        stopScanning();
+        document.getElementById('form-barcode').value = decodedText;
+        switchView('add');
+        checkAndAutofillProduct();
+      }, () => {});
     }
 
     function stopScanning() {
-      if (html5QrScanner && html5QrScanner.isScanning) {
-        html5QrScanner.stop().catch(() => {});
-      }
-    }
-
-    function toggleFlash() {
-      showToast("Flash non supportato nel browser corrente.");
+      if (html5QrScanner && html5QrScanner.isScanning) html5QrScanner.stop().catch(()=>{});
     }
   </script>
 </body>
