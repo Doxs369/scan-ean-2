@@ -168,30 +168,9 @@
       <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
         <div class="flex justify-between items-center">
           <h2 class="text-md font-bold text-slate-900 flex items-center gap-2">
-            <i data-lucide="plus-circle" class="w-5 h-5 text-brand-500"></i> Dettagli Prodotto
+            <i data-lucide="plus-circle" class="w-5 h-5 text-brand-500"></i> Inserisci Manualmente
           </h2>
           <span class="text-[10px] text-slate-400 font-mono">EAN e Dati Prodotto</span>
-        </div>
-
-        <div class="space-y-1.5">
-          <label class="text-xs font-bold text-slate-500">Foto del Prodotto Confezionato</label>
-          <div class="relative flex flex-col items-center justify-center bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl p-4 min-h-[140px] overflow-hidden">
-            <img id="form-photo-preview" class="absolute inset-0 w-full h-full object-cover hidden z-10">
-            
-            <div id="form-photo-placeholder" class="text-center space-y-2 z-0">
-              <div class="p-2.5 bg-brand-100 text-brand-600 rounded-full inline-block">
-                <i data-lucide="camera" class="w-5 h-5"></i>
-              </div>
-              <p class="text-xs font-semibold text-slate-700">Aggiungi foto del prodotto</p>
-              <p class="text-[10px] text-slate-400">Clicca per scattare o caricare</p>
-            </div>
-            
-            <input type="file" id="form-photo-input" accept="image/*" capture="environment" class="absolute inset-0 opacity-0 cursor-pointer z-20" onchange="processAndCompressPhoto(event)">
-            
-            <button id="btn-remove-photo" onclick="removeSelectedPhoto(event)" class="absolute top-2 right-2 bg-red-600 text-white p-1.5 rounded-full shadow-md hidden z-30">
-              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-            </button>
-          </div>
         </div>
         
         <div class="space-y-1.5">
@@ -375,10 +354,11 @@
   <script>
     let products = JSON.parse(localStorage.getItem('scanean_products')) || [];
     let isPremium = JSON.parse(localStorage.getItem('scanean_premium')) || false;
+    let consumedCount = parseInt(localStorage.getItem('scanean_consumed')) || 0;
+    let thrownCount = parseInt(localStorage.getItem('scanean_thrown')) || 0;
     let activeCategory = 'all';
     let html5QrScanner = null;
     let flashEnabled = false;
-    let currentCompressedPhoto = null; // Memorizza temporaneamente l'immagine caricata/scattata
 
     lucide.createIcons();
 
@@ -386,7 +366,7 @@
       applyPremiumState();
       renderProducts();
       updateDashboardStats();
-      requestNotificationPermission();
+      setupSearch();
     });
 
     function applyPremiumState() {
@@ -396,112 +376,216 @@
 
       if (isPremium) {
         if (adBanner) adBanner.classList.add('hidden');
-        premiumBadge.textContent = "Premium";
-        premiumBadge.className = "text-[9px] bg-brand-100 text-brand-600 px-1.5 py-0.5 rounded-full font-bold border border-brand-200 animate-pulse";
+        if (premiumBadge) {
+          premiumBadge.textContent = "Premium";
+          premiumBadge.className = "text-[9px] bg-brand-100 text-brand-600 px-1.5 py-0.5 rounded-full font-bold border border-brand-200 animate-pulse";
+        }
         if (premiumPromoCard) premiumPromoCard.classList.add('hidden');
       } else {
         if (adBanner) adBanner.classList.remove('hidden');
-        premiumBadge.textContent = "Free";
-        premiumBadge.className = "text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full font-medium border border-slate-200";
+        if (premiumBadge) {
+          premiumBadge.textContent = "Free";
+          premiumBadge.className = "text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full font-medium border border-slate-200";
+        }
         if (premiumPromoCard) premiumPromoCard.classList.remove('hidden');
       }
     }
 
-    // ELABORAZIONE E COMPRESSIONE DELLA FOTO SCATTATA
-    function processAndCompressPhoto(event) {
-      const file = event.target.files[0];
-      if (!file) return;
+    function openPaypalModal() {
+      document.getElementById('paypal-modal').classList.remove('hidden');
+    }
 
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const img = new Image();
-        img.onload = function() {
-          const canvas = document.createElement('canvas');
-          const max_size = 400; // Riduce l'immagine per preservare lo spazio di archiviazione locale
-          let width = img.width, height = img.height;
+    function closePaypalModal() {
+      document.getElementById('paypal-modal').classList.add('hidden');
+    }
 
-          if (width > height) {
-            if (width > max_size) { height *= max_size / width; width = max_size; }
-          } else {
-            if (height > max_size) { width *= max_size / height; height = max_size; }
-          }
-          canvas.width = width; canvas.height = height;
-          
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-          
-          currentCompressedPhoto = canvas.toDataURL('image/jpeg', 0.7);
-          
-          // Mostra l'anteprima a schermo
-          const preview = document.getElementById('form-photo-preview');
-          preview.src = currentCompressedPhoto;
-          preview.classList.remove('hidden');
-          document.getElementById('form-photo-placeholder').classList.add('hidden');
-          document.getElementById('btn-remove-photo').classList.remove('hidden');
+    function startPaypalFlow() {
+      closePaypalModal();
+      document.getElementById('paypal-flow').classList.remove('hidden');
+      document.getElementById('paypal-step-loading').classList.remove('hidden');
+      document.getElementById('paypal-step-confirm').classList.add('hidden');
+      document.getElementById('paypal-step-success').classList.add('hidden');
+      
+      setTimeout(() => {
+        document.getElementById('paypal-step-loading').classList.add('hidden');
+        document.getElementById('paypal-step-confirm').classList.remove('hidden');
+      }, 1500);
+    }
+
+    function confirmPaypalPayment() {
+      document.getElementById('paypal-step-confirm').classList.add('hidden');
+      document.getElementById('paypal-step-loading').classList.remove('hidden');
+      
+      setTimeout(() => {
+        document.getElementById('paypal-step-loading').classList.add('hidden');
+        document.getElementById('paypal-step-success').classList.remove('hidden');
+        isPremium = true;
+        localStorage.setItem('scanean_premium', 'true');
+        applyPremiumState();
+      }, 1500);
+    }
+
+    function cancelPaypalFlow() {
+      document.getElementById('paypal-flow').classList.add('hidden');
+    }
+
+    function completePaypalFlow() {
+      document.getElementById('paypal-flow').classList.add('hidden');
+      switchView('dashboard');
+    }
+
+    function switchView(viewId) {
+      const views = ['dashboard', 'scan', 'add', 'stats'];
+      views.forEach(v => {
+        const el = document.getElementById(`view-${v}`);
+        if (el) el.classList.add('hidden');
+        
+        const navBtn = document.getElementById(`nav-${v}`);
+        if (navBtn) {
+          navBtn.classList.remove('text-brand-500');
+          navBtn.classList.add('text-slate-400');
         }
-        img.src = e.target.result;
+      });
+
+      const activeView = document.getElementById(`view-${viewId}`);
+      if (activeView) activeView.classList.remove('hidden');
+      
+      const activeNav = document.getElementById(`nav-${viewId}`);
+      if (activeNav) {
+        activeNav.classList.remove('text-slate-400');
+        activeNav.classList.add('text-brand-500');
       }
-      reader.readAsDataURL(file);
+
+      if (viewId !== 'scan') {
+        stopScanning();
+      }
+      
+      if (viewId === 'stats') {
+        renderStats();
+      }
     }
 
-    function removeSelectedPhoto(e) {
-      if(e) e.preventDefault();
-      currentCompressedPhoto = null;
-      document.getElementById('form-photo-preview').classList.add('hidden');
-      document.getElementById('form-photo-placeholder').classList.remove('hidden');
-      document.getElementById('btn-remove-photo').classList.add('hidden');
-      document.getElementById('form-photo-input').value = "";
+    function showToast(text) {
+      const toast = document.getElementById('toast');
+      const toastText = document.getElementById('toast-text');
+      if (toast && toastText) {
+        toastText.textContent = text;
+        toast.classList.remove('opacity-0');
+        setTimeout(() => {
+          toast.classList.add('opacity-0');
+        }, 2000);
+      }
     }
 
-    // RENDERING DEI PRODOTTI NELLA DISPENSA CON ANTEPRIMA FOTO REALE
+    function setupSearch() {
+      const searchInput = document.getElementById('search-input');
+      if (searchInput) {
+        searchInput.addEventListener('input', () => {
+          renderProducts();
+        });
+      }
+    }
+
+    function filterCategory(event, category) {
+      activeCategory = category;
+      document.querySelectorAll('.category-btn').forEach(btn => {
+        btn.classList.remove('bg-brand-500', 'text-white');
+        btn.classList.add('bg-white', 'text-slate-600', 'border', 'border-slate-200');
+      });
+      event.currentTarget.classList.remove('bg-white', 'text-slate-600', 'border', 'border-slate-200');
+      event.currentTarget.classList.add('bg-brand-500', 'text-white');
+      renderProducts();
+    }
+
+    function getDaysToExpiry(expiryDateStr) {
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const expiry = new Date(expiryDateStr);
+      expiry.setHours(0,0,0,0);
+      const diffTime = expiry - today;
+      return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
+
+    function updateDashboardStats() {
+      let expired = 0;
+      let warning = 0;
+      
+      products.forEach(p => {
+        const days = getDaysToExpiry(p.expiry);
+        if (days < 0) expired++;
+        else if (days <= 3) warning++;
+      });
+
+      document.getElementById('stat-expired').textContent = expired;
+      document.getElementById('stat-warning').textContent = warning;
+    }
+
     function renderProducts() {
       const container = document.getElementById('products-container');
+      const emptyState = document.getElementById('empty-state');
+      const searchVal = document.getElementById('search-input')?.value.toLowerCase() || '';
+
       if (!container) return;
       container.innerHTML = '';
 
-      const query = document.getElementById('search-input')?.value.toLowerCase() || '';
-      
       let filtered = products.filter(p => {
-        if (p.status !== 'active') return false;
-        if (activeCategory !== 'all' && p.category !== activeCategory) return false;
-        
-        return p.name.toLowerCase().includes(query) || 
-               p.brand.toLowerCase().includes(query) || 
-               p.barcode.toLowerCase().includes(query);
+        const matchesCategory = activeCategory === 'all' || p.category === activeCategory;
+        const matchesSearch = p.name.toLowerCase().includes(searchVal) || 
+                              (p.brand && p.brand.toLowerCase().includes(searchVal)) || 
+                              (p.barcode && p.barcode.includes(searchVal));
+        return matchesCategory && matchesSearch;
       });
+
+      // Sort by expiry date
+      filtered.sort((a, b) => new Date(a.expiry) - new Date(b.expiry));
 
       if (filtered.length === 0) {
-        document.getElementById('empty-state').classList.remove('hidden');
-        return;
-      }
-      document.getElementById('empty-state').classList.add('hidden');
-
-      filtered.forEach(p => {
-        const card = document.createElement('div');
-        card.className = "p-4 rounded-2xl border border-slate-200 bg-white shadow-sm flex items-center gap-3";
+        emptyState.classList.remove('hidden');
+      } else {
+        emptyState.classList.add('hidden');
         
-        // Se c'è la foto salvata la mostra, altrimenti mette l'icona del pacchetto standard
-        const imgBlock = p.photo 
-          ? `<img src="${p.photo}" class="w-12 h-12 rounded-xl object-cover border border-slate-100 shrink-0">`
-          : `<div class="w-12 h-12 bg-slate-100 text-slate-400 flex items-center justify-center rounded-xl shrink-0"><i data-lucide="package" class="w-5 h-5"></i></div>`;
+        filtered.forEach((p, idx) => {
+          const days = getDaysToExpiry(p.expiry);
+          let badgeColor = 'bg-green-50 text-green-700 border-green-100';
+          let statusText = `Scade tra ${days} gg`;
+          
+          if (days < 0) {
+            badgeColor = 'bg-red-50 text-red-700 border-red-100 animate-pulse';
+            statusText = `Scaduto da ${Math.abs(days)} gg`;
+          } else if (days === 0) {
+            badgeColor = 'bg-accent-50 text-accent-700 border-accent-100';
+            statusText = "Scade OGGI";
+          } else if (days <= 3) {
+            badgeColor = 'bg-amber-50 text-amber-700 border-amber-100';
+            statusText = `In scadenza (${days} gg)`;
+          }
 
-        card.innerHTML = `
-          ${imgBlock}
-          <div class="flex-1 min-w-0">
-            <h4 class="font-bold text-slate-900 text-sm truncate">${p.name}</h4>
-            <p class="text-xs text-slate-400 font-medium truncate">${p.brand ? p.brand + ' &bull; ' : ''}${p.category}</p>
-            <p class="text-[11px] font-semibold text-slate-500 mt-0.5">Scadenza: ${formatDate(p.expiry)}</p>
-          </div>
-          <button onclick="changeStatus('${p.id}', 'consumed')" class="bg-brand-50 hover:bg-brand-100 text-brand-600 px-3 py-1.5 rounded-lg text-xs font-bold transition">
-            Consuma
-          </button>
-        `;
-        container.appendChild(card);
-      });
+          const div = document.createElement('div');
+          div.className = 'bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-3';
+          div.innerHTML = `
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-slate-900 truncate">${p.name}</span>
+                <span class="text-[10px] px-2 py-0.5 rounded-md border font-semibold ${badgeColor}">${statusText}</span>
+              </div>
+              <p class="text-[11px] text-slate-500 mt-0.5 truncate">${p.brand ? p.brand : 'Nessuna marca'} &bull; ${p.category}</p>
+              ${p.notes ? `<p class="text-[10px] text-slate-400 mt-1 italic truncate">"${p.notes}"</p>` : ''}
+            </div>
+            <div class="flex gap-1.5 shrink-0">
+              <button onclick="consumeProduct('${p.id}')" class="p-2 bg-brand-50 hover:bg-brand-100 text-brand-600 rounded-lg transition" title="Consumato">
+                <i data-lucide="check" class="w-4 h-4"></i>
+              </button>
+              <button onclick="throwProduct('${p.id}')" class="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition" title="Buttato">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          `;
+          container.appendChild(div);
+        });
+      }
       lucide.createIcons();
     }
 
-    // SALVATAGGIO INCLUSO DEL PARAMETRO FOTO
     function saveProduct() {
       const name = document.getElementById('form-name').value.trim();
       const barcode = document.getElementById('form-barcode').value.trim();
@@ -511,277 +595,148 @@
       const notes = document.getElementById('form-notes').value.trim();
 
       if (!name || !expiry) {
-        showToast("⚠️ Nome prodotto e Data di scadenza sono obbligatori!");
+        showToast("Inserisci nome e data di scadenza!");
         return;
       }
 
       const newProduct = {
-        id: Date.now().toString(),
+        id: 'p_' + Date.now(),
         name,
         barcode,
         brand,
         category,
         expiry,
-        notes,
-        status: 'active',
-        photo: currentCompressedPhoto // Associa la foto al record del prodotto
+        notes
       };
 
       products.push(newProduct);
       localStorage.setItem('scanean_products', JSON.stringify(products));
       
-      renderProducts();
-      updateDashboardStats();
-      resetForm();
-      switchView('dashboard');
-      showToast("✅ Prodotto salvato con successo!");
-    }
-
-    function resetForm() {
+      // Reset form
       document.getElementById('form-name').value = '';
       document.getElementById('form-barcode').value = '';
       document.getElementById('form-brand').value = '';
       document.getElementById('form-expiry').value = '';
       document.getElementById('form-notes').value = '';
-      removeSelectedPhoto();
+
+      showToast("Prodotto salvato!");
+      updateDashboardStats();
+      switchView('dashboard');
+      renderProducts();
     }
 
-    // GESTIONE SCANNER E PASSO AUTOMATICO ALLA COMPILAZIONE
+    function consumeProduct(id) {
+      products = products.filter(p => p.id !== id);
+      consumedCount++;
+      localStorage.setItem('scanean_products', JSON.stringify(products));
+      localStorage.setItem('scanean_consumed', consumedCount);
+      showToast("Ottimo! Prodotto consumato.");
+      updateDashboardStats();
+      renderProducts();
+    }
+
+    function throwProduct(id) {
+      products = products.filter(p => p.id !== id);
+      thrownCount++;
+      localStorage.setItem('scanean_products', JSON.stringify(products));
+      localStorage.setItem('scanean_thrown', thrownCount);
+      showToast("Prodotto rimosso (Spreco).");
+      updateDashboardStats();
+      renderProducts();
+    }
+
+    function renderStats() {
+      document.getElementById('stat-consumed').textContent = consumedCount;
+      document.getElementById('stat-thrown').textContent = thrownCount;
+      
+      const total = consumedCount + thrownCount;
+      const ratioBar = document.getElementById('waste-ratio-bar');
+      const ratioText = document.getElementById('waste-ratio-text');
+      
+      if (total === 0) {
+        if (ratioBar) ratioBar.style.width = '0%';
+        if (ratioText) ratioText.textContent = '0% Salvato';
+      } else {
+        const percentage = Math.round((consumedCount / total) * 100);
+        if (ratioBar) ratioBar.style.width = `${percentage}%`;
+        if (ratioText) ratioText.textContent = `${percentage}% Salvato`;
+      }
+    }
+
+    function clearDatabase() {
+      if (confirm("Sei sicuro di voler resettare tutta la tua dispensa e le statistiche?")) {
+        products = [];
+        consumedCount = 0;
+        thrownCount = 0;
+        localStorage.removeItem('scanean_products');
+        localStorage.setItem('scanean_consumed', 0);
+        localStorage.setItem('scanean_thrown', 0);
+        showToast("Dispensa resettata!");
+        updateDashboardStats();
+        renderProducts();
+        if (document.getElementById('view-stats').classList.contains('hidden') === false) {
+          renderStats();
+        }
+      }
+    }
+
+    function fetchProductInfo() {
+      const barcode = document.getElementById('form-barcode').value.trim();
+      if (!barcode) {
+        showToast("Inserisci un codice a barre!");
+        return;
+      }
+      if (barcode === "8002270014901") {
+        document.getElementById('form-name').value = "Latte Parzialmente Scremato UHT";
+        document.getElementById('form-brand').value = "Granarolo";
+        document.getElementById('form-category').value = "Frigorifero";
+        showToast("Prodotto demo trovato!");
+      } else {
+        showToast("Codice non trovato nel database locale.");
+      }
+    }
+
     function startScanning() {
-      if (window.location.protocol === 'file:') {
+      if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
         document.getElementById('scanner-security-alert').classList.remove('hidden');
         return;
       }
+      
       document.getElementById('scanner-security-alert').classList.add('hidden');
-
+      
       if (!html5QrScanner) {
         html5QrScanner = new Html5Qrcode("scanner-reader");
       }
-      
-      const config = { fps: 15, qrbox: { width: 250, height: 160 } };
+
+      const config = { fps: 15, qrbox: { width: 220, height: 150 } };
       
       html5QrScanner.start(
-        { facingMode: "environment" }, 
+        { facingMode: "environment" },
         config,
         (decodedText) => {
           stopScanning();
-          resetForm();
           document.getElementById('form-barcode').value = decodedText;
           switchView('add');
-          fetchProductInfo();
+          if (decodedText === "8002270014901") {
+            fetchProductInfo();
+          } else {
+            showToast(`Codice letto: ${decodedText}`);
+          }
         },
         () => {}
       ).catch(() => {
-        document.getElementById('scanner-security-alert').classList.remove('hidden');
+        showToast("Errore di inizializzazione fotocamera.");
       });
     }
 
     function stopScanning() {
       if (html5QrScanner && html5QrScanner.isScanning) {
-        html5QrScanner.stop().then(() => {
-          if(flashEnabled) toggleFlash();
-        });
+        html5QrScanner.stop().catch(() => {});
       }
-    }
-
-    function fetchProductInfo() {
-      const code = document.getElementById('form-barcode').value.trim();
-      if (!code) return;
-
-      fetch(`https://world.openfoodfacts.org/api/v2/product/${code}.json`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.status === 1 && data.product) {
-            document.getElementById('form-name').value = data.product.product_name || '';
-            document.getElementById('form-brand').value = data.product.brands || '';
-            showToast("🔍 Dati prodotto trovati online!");
-          } else {
-            showToast("ℹ️ Prodotto non trovato nel database online.");
-          }
-        })
-        .catch(() => {
-          showToast("⚠️ Impossibile connettersi al database online.");
-        });
-    }
-
-    function changeStatus(id, newStatus) {
-      products = products.map(p => {
-        if (p.id === id) p.status = newStatus;
-        return p;
-      });
-      localStorage.setItem('scanean_products', JSON.stringify(products));
-      renderProducts();
-      updateDashboardStats();
-    }
-
-    function updateDashboardStats() {
-      const active = products.filter(p => p.status === 'active');
-      const consumed = products.filter(p => p.status === 'consumed').length;
-      const thrown = products.filter(p => p.status === 'thrown').length;
-      
-      const today = new Date().toISOString().split('T')[0];
-      const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-
-      const expired = active.filter(p => p.expiry < today).length;
-      const warning = active.filter(p => p.expiry >= today && p.expiry <= nextWeek).length;
-
-      document.getElementById('stat-expired').textContent = expired;
-      document.getElementById('stat-warning').textContent = warning;
-      
-      if(document.getElementById('stat-consumed')) document.getElementById('stat-consumed').textContent = consumed;
-      if(document.getElementById('stat-thrown')) document.getElementById('stat-thrown').textContent = thrown;
-
-      const totalHistory = consumed + thrown;
-      const ratio = totalHistory > 0 ? Math.round((consumed / totalHistory) * 100) : 0;
-      
-      const ratioBar = document.getElementById('waste-ratio-bar');
-      const ratioText = document.getElementById('waste-ratio-text');
-      if (ratioBar) ratioBar.style.width = `${ratio}%`;
-      if (ratioText) ratioText.textContent = `${ratio}% Salvato`;
-
-      renderHistory();
-    }
-
-    function renderHistory() {
-      const container = document.getElementById('history-container');
-      if (!container) return;
-      container.innerHTML = '';
-      
-      const historyProducts = products.filter(p => p.status !== 'active');
-      if(historyProducts.length === 0) {
-        container.innerHTML = '<p class="text-[11px] text-slate-400 text-center py-2">Nessuna attività registrata</p>';
-        return;
-      }
-
-      historyProducts.slice(-5).reverse().forEach(p => {
-        const item = document.createElement('div');
-        item.className = "flex justify-between items-center text-[11px] p-2 bg-slate-50 border border-slate-100 rounded-lg";
-        const label = p.status === 'consumed' 
-          ? '<span class="text-brand-600 font-bold">Consumato</span>' 
-          : '<span class="text-red-500 font-bold">Buttato</span>';
-        item.innerHTML = `<span class="truncate font-medium text-slate-700 max-w-[160px]">${p.name}</span> ${label}`;
-        container.appendChild(item);
-      });
-    }
-
-    function clearDatabase() {
-      if(confirm("Sei sicuro di voler cancellare tutti i dati ed azzerare la dispensa?")) {
-        products = [];
-        localStorage.removeItem('scanean_products');
-        renderProducts();
-        updateDashboardStats();
-        showToast("🗑️ Database resettato!");
-      }
-    }
-
-    function switchView(viewId) {
-      ['dashboard', 'scan', 'add', 'stats'].forEach(v => {
-        const element = document.getElementById(`view-${v}`);
-        if(element) element.classList.add('hidden');
-        
-        const navBtn = document.getElementById(`nav-${v}`);
-        if(navBtn) {
-          navBtn.classList.remove('text-brand-500');
-          navBtn.classList.add('text-slate-400');
-        }
-      });
-
-      const activeView = document.getElementById(`view-${viewId}`);
-      if(activeView) activeView.classList.remove('hidden');
-      
-      const activeNav = document.getElementById(`nav-${viewId}`);
-      if(activeNav) {
-        activeNav.classList.remove('text-slate-400');
-        activeNav.classList.add('text-brand-500');
-      }
-
-      if (viewId !== 'scan') stopScanning();
-    }
-
-    function filterCategory(e, category) {
-      activeCategory = category;
-      document.querySelectorAll('.category-btn').forEach(btn => {
-        btn.classList.remove('bg-brand-500', 'text-white', 'shadow-sm');
-        btn.classList.add('bg-white', 'text-slate-600', 'border-slate-200');
-      });
-      e.currentTarget.classList.add('bg-brand-500', 'text-white', 'shadow-sm');
-      e.currentTarget.classList.remove('bg-white', 'text-slate-600', 'border-slate-200');
-      renderProducts();
     }
 
     function toggleFlash() {
-      if (html5QrScanner && html5QrScanner.isScanning) {
-        flashEnabled = !flashEnabled;
-        const flashBtn = document.getElementById('flash-btn');
-        html5QrScanner.applyVideoConstraints({
-          advanced: [{ torch: flashEnabled }]
-        }).then(() => {
-          if(flashEnabled) {
-            flashBtn.classList.replace('bg-white', 'bg-accent-100');
-            flashBtn.innerHTML = `<i data-lucide="zap" class="w-4 h-4 text-accent-500"></i>`;
-          } else {
-            flashBtn.classList.replace('bg-accent-100', 'bg-white');
-            flashBtn.innerHTML = `<i data-lucide="zap" class="w-4 h-4 text-slate-400"></i>`;
-          }
-          lucide.createIcons();
-        }).catch(() => {
-          flashEnabled = false;
-          showToast("🔦 Flash non supportato su questo browser");
-        });
-      }
-    }
-
-    function requestNotificationPermission() {
-      if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission();
-      }
-    }
-
-    function showToast(message) {
-      const toast = document.getElementById('toast');
-      const text = document.getElementById('toast-text');
-      if(!toast || !text) return;
-      text.textContent = message;
-      toast.classList.replace('opacity-0', 'opacity-100');
-      setTimeout(() => toast.classList.replace('opacity-100', 'opacity-0'), 2500);
-    }
-
-    function formatDate(dateStr) {
-      if (!dateStr) return '';
-      const parts = dateStr.split('-');
-      return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : dateStr;
-    }
-
-    // EVENTI PAYPAL FLUIDI MOCKUP
-    function openPaypalModal() { document.getElementById('paypal-modal').classList.remove('hidden'); }
-    function closePaypalModal() { document.getElementById('paypal-modal').classList.add('hidden'); }
-    function startPaypalFlow() {
-      closePaypalModal();
-      document.getElementById('paypal-flow').classList.remove('hidden');
-      document.getElementById('paypal-step-loading').classList.remove('hidden');
-      document.getElementById('paypal-step-confirm').classList.add('hidden');
-      document.getElementById('paypal-step-success').classList.add('hidden');
-      setTimeout(() => {
-        document.getElementById('paypal-step-loading').classList.add('hidden');
-        document.getElementById('paypal-step-confirm').classList.remove('hidden');
-      }, 1500);
-    }
-    function confirmPaypalPayment() {
-      document.getElementById('paypal-step-confirm').classList.add('hidden');
-      document.getElementById('paypal-step-loading').classList.remove('hidden');
-      setTimeout(() => {
-        document.getElementById('paypal-step-loading').classList.add('hidden');
-        document.getElementById('paypal-step-success').classList.remove('hidden');
-        lucide.createIcons();
-      }, 1500);
-    }
-    function cancelPaypalFlow() { document.getElementById('paypal-flow').classList.add('hidden'); }
-    function completePaypalFlow() {
-      isPremium = true;
-      localStorage.setItem('scanean_premium', true);
-      applyPremiumState();
-      document.getElementById('paypal-flow').classList.add('hidden');
-      showToast("👑 Grazie! Sei un utente Premium ora.");
+      showToast("Flash non supportato nel browser corrente.");
     }
   </script>
 </body>
