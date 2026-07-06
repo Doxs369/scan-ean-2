@@ -332,6 +332,7 @@
       if (fileInput) fileInput.value = "";
     }
 
+    // Pulisce tutti i campi ad esclusione dell'EAN
     function resetForm() {
       document.getElementById('form-name').value = '';
       document.getElementById('form-barcode').value = '';
@@ -354,7 +355,7 @@
         if (saved.image) {
           currentProductImageBase64 = saved.image;
           displayImagePreview(saved.image);
-          showToast("Immagine storica caricata automaticamente!");
+          showToast("Foto recuperata dallo storico!");
         } else {
           removeSelectedImage();
         }
@@ -374,40 +375,51 @@
         return;
       }
 
+      // 1. Se l'utente ha scattato una NUOVA foto o ha recuperato la vecchia, usiamo quella
+      let imageToSave = currentProductImageBase64;
+      
+      // Se non c'è una foto attiva nei campi ma esiste nello storico EAN, recuperiamo quella
+      if (!imageToSave && barcode && globalCatalog[barcode] && globalCatalog[barcode].image) {
+        imageToSave = globalCatalog[barcode].image;
+      }
+
+      // 2. Aggiorna l'archivio storico globale per questo EAN
       if (barcode) {
         globalCatalog[barcode] = {
           name: name,
           brand: brand,
-          image: currentProductImageBase64 || (globalCatalog[barcode] ? globalCatalog[barcode].image : "")
+          image: imageToSave
         };
         try {
           localStorage.setItem('scanean_catalog', JSON.stringify(globalCatalog));
         } catch(e) {
-          showToast("Memoria piena! Cancella qualche dato dai Report.");
+          console.log("Errore salvataggio catalogo storico:", e);
         }
       }
 
+      // 3. Crea il NUOVO prodotto indipendente in lista
       const newProduct = {
         id: 'p_' + Date.now(),
-        name,
-        barcode,
-        brand,
-        category,
-        expiry,
-        notes,
-        image: currentProductImageBase64 || (barcode && globalCatalog[barcode] ? globalCatalog[barcode].image : "")
+        name: name,
+        barcode: barcode,
+        brand: brand,
+        category: category,
+        expiry: expiry,
+        notes: notes,
+        image: imageToSave
       };
 
       products.push(newProduct);
+      
       try {
         localStorage.setItem('scanean_products', JSON.stringify(products));
       } catch(e) {
-        showToast("Impossibile salvare: memoria del telefono piena!");
+        showToast("Spazio insufficiente sul telefono!");
         return;
       }
       
       resetForm();
-      showToast("Prodotto salvato in dispensa!");
+      showToast("Prodotto inserito con successo!");
       updateDashboardStats();
       switchView('dashboard');
       renderProducts();
@@ -495,7 +507,6 @@
       document.getElementById('stat-thrown').textContent = thrownCount;
     }
 
-    // PULIZIA DATABASE IN CASO DI BLOCCHI DI MEMORIA
     function clearDatabase() {
       if (confirm("Vuoi azzerare la dispensa e tutto il catalogo foto storico?")) {
         products = []; globalCatalog = {}; consumedCount = 0; thrownCount = 0;
