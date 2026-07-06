@@ -164,7 +164,7 @@
 
             <label class="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 hover:bg-slate-100 rounded-xl text-xs font-semibold text-slate-700 cursor-pointer transition shadow-sm">
               <i data-lucide="camera" class="w-4 h-4 text-brand-500"></i>
-              <span>Scatta o Cambia Foto</span>
+              <span id="camera-btn-text">Scatta Foto</span>
               <input type="file" id="form-image" accept="image/*" capture="environment" class="hidden" onchange="handleImageUpload(event)">
             </label>
           </div>
@@ -302,14 +302,41 @@
       }
     }
 
+    // COMPRESSIONE AUTOMATICA DELLA FOTO PER EVITARE BLOCCHI DI MEMORIA
     function handleImageUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
 
+      const btnText = document.getElementById('camera-btn-text');
+      if (btnText) btnText.textContent = "Compressione...";
+
       const reader = new FileReader();
       reader.onload = function(e) {
-        currentProductImageBase64 = e.target.result;
-        displayImagePreview(currentProductImageBase64);
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          // Ridimensiona l'immagine a max 300px per ottimizzare la memoria
+          const max_size = 300;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > max_size) { height *= max_size / width; width = max_size; }
+          } else {
+            if (height > max_size) { width *= max_size / height; height = max_size; }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Comprime l'immagine portando la qualità al 60% (.jpeg è incredibilmente leggero)
+          currentProductImageBase64 = canvas.toDataURL('image/jpeg', 0.6);
+          displayImagePreview(currentProductImageBase64);
+          if (btnText) btnText.textContent = "Cambia Foto";
+        };
+        img.src = e.target.result;
       };
       reader.readAsDataURL(file);
     }
@@ -330,9 +357,10 @@
       if (container && img) { img.src = ""; container.classList.add('hidden'); }
       const fileInput = document.getElementById('form-image');
       if (fileInput) fileInput.value = "";
+      const btnText = document.getElementById('camera-btn-text');
+      if (btnText) btnText.textContent = "Scatta Foto";
     }
 
-    // Pulisce tutti i campi ad esclusione dell'EAN
     function resetForm() {
       document.getElementById('form-name').value = '';
       document.getElementById('form-barcode').value = '';
@@ -355,7 +383,7 @@
         if (saved.image) {
           currentProductImageBase64 = saved.image;
           displayImagePreview(saved.image);
-          showToast("Foto recuperata dallo storico!");
+          showToast("Foto recuperata automaticamente!");
         } else {
           removeSelectedImage();
         }
@@ -375,15 +403,12 @@
         return;
       }
 
-      // 1. Se l'utente ha scattato una NUOVA foto o ha recuperato la vecchia, usiamo quella
       let imageToSave = currentProductImageBase64;
       
-      // Se non c'è una foto attiva nei campi ma esiste nello storico EAN, recuperiamo quella
       if (!imageToSave && barcode && globalCatalog[barcode] && globalCatalog[barcode].image) {
         imageToSave = globalCatalog[barcode].image;
       }
 
-      // 2. Aggiorna l'archivio storico globale per questo EAN
       if (barcode) {
         globalCatalog[barcode] = {
           name: name,
@@ -393,11 +418,10 @@
         try {
           localStorage.setItem('scanean_catalog', JSON.stringify(globalCatalog));
         } catch(e) {
-          console.log("Errore salvataggio catalogo storico:", e);
+          console.log("Errore catalogo:", e);
         }
       }
 
-      // 3. Crea il NUOVO prodotto indipendente in lista
       const newProduct = {
         id: 'p_' + Date.now(),
         name: name,
@@ -414,12 +438,12 @@
       try {
         localStorage.setItem('scanean_products', JSON.stringify(products));
       } catch(e) {
-        showToast("Spazio insufficiente sul telefono!");
+        showToast("Errore di memoria! Svuota i Report.");
         return;
       }
       
       resetForm();
-      showToast("Prodotto inserito con successo!");
+      showToast("Prodotto salvato!");
       updateDashboardStats();
       switchView('dashboard');
       renderProducts();
