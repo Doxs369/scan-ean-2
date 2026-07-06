@@ -78,6 +78,7 @@
 
   <main class="flex-1 overflow-y-auto pb-28 px-4 pt-4 no-scrollbar">
     
+    <!-- DASHBOARD DI DISPENSA -->
     <section id="view-dashboard" class="space-y-4">
       <div class="relative">
         <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
@@ -113,6 +114,7 @@
       </div>
     </section>
 
+    <!-- SCHERMATA SCANNER -->
     <section id="view-scan" class="hidden space-y-4">
       <div class="bg-white rounded-2xl overflow-hidden relative border border-slate-200 shadow-sm flex flex-col items-center justify-center min-h-[240px]">
         <div id="scanner-reader" class="w-full aspect-[4/3] bg-black"></div>
@@ -129,6 +131,7 @@
       </div>
     </section>
 
+    <!-- SCHERMATA DETTAGLIO / INSERIMENTO -->
     <section id="view-add" class="hidden space-y-4">
       <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
         <div class="flex justify-between items-center">
@@ -137,6 +140,7 @@
           </h2>
         </div>
         
+        <!-- Campo nascosto per memorizzare l'ID del prodotto in modifica -->
         <input type="hidden" id="form-product-id" value="">
 
         <div class="space-y-1.5">
@@ -175,7 +179,7 @@
         </div>
 
         <div class="flex gap-3 pt-2">
-          <button type="button" onclick="switchView('dashboard')" class="flex-1 py-3 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700">
+          <button type="button" onclick="resetForm(); switchView('dashboard')" class="flex-1 py-3 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700">
             Annulla
           </button>
           <button type="button" onclick="saveProduct()" class="flex-1 py-3 bg-brand-500 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1 shadow-sm">
@@ -185,6 +189,7 @@
       </div>
     </section>
 
+    <!-- REPORT / IMPOSTAZIONI -->
     <section id="view-stats" class="hidden space-y-4">
       <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
         <h2 class="text-md font-bold text-slate-900 flex items-center gap-2">
@@ -213,7 +218,7 @@
       <i data-lucide="layout-grid" class="w-5 h-5"></i>
       <span class="text-[9px] font-bold">Dispensa</span>
     </button>
-    <button onclick="startScanning(); switchView('scan')" id="nav-scan" class="flex flex-col items-center justify-center w-14 h-14 bg-brand-500 text-white rounded-full -translate-y-4 shadow-md border-4 border-slate-50">
+    <button onclick="resetForm(); startScanning(); switchView('scan')" id="nav-scan" class="flex flex-col items-center justify-center w-14 h-14 bg-brand-500 text-white rounded-full -translate-y-4 shadow-md border-4 border-slate-50">
       <i data-lucide="scan-line" class="w-6 h-6"></i>
     </button>
     <button onclick="switchView('stats')" id="nav-stats" class="flex flex-col items-center gap-1 text-slate-400">
@@ -245,14 +250,27 @@
       views.forEach(v => {
         const el = document.getElementById(`view-${v}`);
         if (el) el.classList.add('hidden');
+        
+        // Gestione corretta dei colori della barra di navigazione inferiore
         const navBtn = document.getElementById(`nav-${v}`);
-        if (navBtn) { navBtn.classList.remove('text-brand-500'); navBtn.classList.add('text-slate-400'); }
+        if (navBtn) {
+          if (v === 'scan') {
+            // Pulsante centrale rimane invariato
+          } else {
+            navBtn.classList.remove('text-brand-500');
+            navBtn.classList.add('text-slate-400');
+          }
+        }
       });
 
       const activeView = document.getElementById(`view-${viewId}`);
       if (activeView) activeView.classList.remove('hidden');
+      
       const activeNav = document.getElementById(`nav-${viewId}`);
-      if (activeNav) { activeNav.classList.remove('text-slate-400'); activeNav.classList.add('text-brand-500'); }
+      if (activeNav && viewId !== 'scan') {
+        activeNav.classList.remove('text-slate-400');
+        activeNav.classList.add('text-brand-500');
+      }
 
       if (viewId !== 'scan') stopScanning();
       if (viewId === 'stats') renderStats();
@@ -273,13 +291,14 @@
       document.getElementById('form-name').value = '';
       document.getElementById('form-barcode').value = '';
       document.getElementById('form-brand').value = '';
+      document.getElementById('form-category').value = 'Dispensa';
       document.getElementById('form-expiry').value = '';
       document.getElementById('form-notes').value = '';
       document.getElementById('form-title').innerHTML = `<i data-lucide="plus-circle" class="w-5 h-5 text-brand-500"></i> Dati Prodotto`;
       lucide.createIcons();
     }
 
-    // NUOVA FUNZIONE: Carica i dati del prodotto cliccato nel form e apre la schermata
+    // FUNZIONE DI MODIFICA: Carica i dati e attiva la visualizzazione corretta
     function editProduct(id) {
       const product = products.find(p => p.id === id);
       if (!product) return;
@@ -313,11 +332,11 @@
       }
 
       if (productId) {
-        // MODIFICA: Aggiorna il prodotto esistente
+        // Aggiorna prodotto esistente
         const index = products.findIndex(p => p.id === productId);
         if (index !== -1) {
           products[index] = {
-            ...products[index],
+            id: productId,
             name: name,
             barcode: barcode,
             brand: brand,
@@ -325,10 +344,10 @@
             expiry: expiry,
             notes: notes
           };
-          showToast("Prodotto aggiornato!");
+          showToast("Prodotto modificato con successo!");
         }
       } else {
-        // NUOVO INSERIMENTO: Crea un nuovo prodotto
+        // Crea nuovo prodotto
         const newProduct = {
           id: 'p_' + Date.now(),
           name: name,
@@ -369,8 +388,8 @@
         emptyState.classList.add('hidden');
         filtered.forEach(p => {
           const div = document.createElement('div');
-          // Aggiunto cursor-pointer e onclick per riaprire i dettagli cliccando sulla scheda
           div.className = 'bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-3 cursor-pointer active:bg-slate-50 transition-colors';
+          // Al click sulla riga si apre il dettaglio in modifica
           div.setAttribute('onclick', `editProduct('${p.id}')`);
           
           div.innerHTML = `
