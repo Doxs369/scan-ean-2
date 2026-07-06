@@ -78,7 +78,6 @@
 
   <main class="flex-1 overflow-y-auto pb-28 px-4 pt-4 no-scrollbar">
     
-    <!-- DASHBOARD DI DISPENSA -->
     <section id="view-dashboard" class="space-y-4">
       <div class="relative">
         <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
@@ -114,7 +113,6 @@
       </div>
     </section>
 
-    <!-- SCHERMATA SCANNER -->
     <section id="view-scan" class="hidden space-y-4">
       <div class="bg-white rounded-2xl overflow-hidden relative border border-slate-200 shadow-sm flex flex-col items-center justify-center min-h-[240px]">
         <div id="scanner-reader" class="w-full aspect-[4/3] bg-black"></div>
@@ -131,7 +129,6 @@
       </div>
     </section>
 
-    <!-- SCHERMATA DETTAGLIO / INSERIMENTO -->
     <section id="view-add" class="hidden space-y-4">
       <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
         <div class="flex justify-between items-center">
@@ -140,8 +137,25 @@
           </h2>
         </div>
         
-        <!-- Campo nascosto per memorizzare l'ID del prodotto in modifica -->
         <input type="hidden" id="form-product-id" value="">
+
+        <div class="space-y-1.5 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-xl p-3 bg-slate-50 relative min-h-[120px]">
+          <video id="product-video" autoplay playsinline class="hidden w-full max-h-48 object-cover rounded-lg bg-black"></video>
+          <img id="product-preview" class="hidden w-24 h-24 object-cover rounded-lg border shadow-sm" src="">
+          <div id="photo-placeholder" class="text-center py-2">
+            <i data-lucide="camera" class="w-8 h-8 text-slate-300 mx-auto mb-1"></i>
+            <span class="text-[11px] text-slate-400 block font-medium">Nessuna foto associata</span>
+          </div>
+          <div class="flex gap-2 mt-2 w-full justify-center">
+            <button type="button" id="btn-start-camera" onclick="startCamera()" class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 flex items-center gap-1 shadow-xs">
+              <i data-lucide="video" class="w-3.5 h-3.5 text-brand-500"></i> Attiva Fotocamera
+            </button>
+            <button type="button" id="btn-take-photo" onclick="takePhoto()" class="hidden px-3 py-1.5 bg-brand-500 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-xs">
+              <i data-lucide="aperture" class="w-3.5 h-3.5"></i> Scatta Foto
+            </button>
+          </div>
+          <input type="hidden" id="form-photo" value="">
+        </div>
 
         <div class="space-y-1.5">
           <label class="text-xs font-bold text-slate-500">Codice EAN / QR</label>
@@ -179,7 +193,7 @@
         </div>
 
         <div class="flex gap-3 pt-2">
-          <button type="button" onclick="resetForm(); switchView('dashboard')" class="flex-1 py-3 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700">
+          <button type="button" onclick="stopCamera(); resetForm(); switchView('dashboard')" class="flex-1 py-3 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700">
             Annulla
           </button>
           <button type="button" onclick="saveProduct()" class="flex-1 py-3 bg-brand-500 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1 shadow-sm">
@@ -189,7 +203,6 @@
       </div>
     </section>
 
-    <!-- REPORT / IMPOSTAZIONI -->
     <section id="view-stats" class="hidden space-y-4">
       <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
         <h2 class="text-md font-bold text-slate-900 flex items-center gap-2">
@@ -237,6 +250,7 @@
     let thrownCount = parseInt(localStorage.getItem('scanean_thrown')) || 0;
     let activeCategory = 'all';
     let html5QrScanner = null;
+    let cameraStream = null;
 
     lucide.createIcons();
 
@@ -251,15 +265,10 @@
         const el = document.getElementById(`view-${v}`);
         if (el) el.classList.add('hidden');
         
-        // Gestione corretta dei colori della barra di navigazione inferiore
         const navBtn = document.getElementById(`nav-${v}`);
-        if (navBtn) {
-          if (v === 'scan') {
-            // Pulsante centrale rimane invariato
-          } else {
-            navBtn.classList.remove('text-brand-500');
-            navBtn.classList.add('text-slate-400');
-          }
+        if (navBtn && v !== 'scan') {
+          navBtn.classList.remove('text-brand-500');
+          navBtn.classList.add('text-slate-400');
         }
       });
 
@@ -273,6 +282,7 @@
       }
 
       if (viewId !== 'scan') stopScanning();
+      if (viewId !== 'add') stopCamera();
       if (viewId === 'stats') renderStats();
     }
 
@@ -286,6 +296,73 @@
       }
     }
 
+    // GESTIONE INTEGRATA FOTOCAMERA PRODOTTO
+    function startCamera() {
+      const video = document.getElementById('product-video');
+      const placeholder = document.getElementById('photo-placeholder');
+      const preview = document.getElementById('product-preview');
+      
+      placeholder.classList.add('hidden');
+      preview.classList.add('hidden');
+      video.classList.remove('hidden');
+
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false })
+        .then(stream => {
+          cameraStream = stream;
+          video.srcObject = stream;
+          document.getElementById('btn-start-camera').classList.add('hidden');
+          document.getElementById('btn-take-photo').classList.remove('hidden');
+        })
+        .catch(err => {
+          showToast("Impossibile accedere alla fotocamera");
+          resetPhotoUI();
+        });
+    }
+
+    function takePhoto() {
+      const video = document.getElementById('product-video');
+      const canvas = document.createElement('canvas');
+      
+      // Compressione automatica dell'immagine per non saturare il LocalStorage
+      canvas.width = 240;
+      canvas.height = 240;
+      const ctx = canvas.getContext('2d');
+      
+      // Ritaglio quadrato centrato della sorgente video
+      const minDim = Math.min(video.videoWidth, video.videoHeight);
+      const sx = (video.videoWidth - minDim) / 2;
+      const sy = (video.videoHeight - minDim) / 2;
+      
+      ctx.drawImage(video, sx, sy, minDim, minDim, 0, 0, canvas.width, canvas.height);
+      
+      const base64 = canvas.toDataURL('image/jpeg', 0.7);
+      document.getElementById('form-photo').value = base64;
+      
+      const preview = document.getElementById('product-preview');
+      preview.src = base64;
+      preview.classList.remove('hidden');
+      
+      stopCamera();
+    }
+
+    function stopCamera() {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+      }
+      document.getElementById('product-video').classList.add('hidden');
+      document.getElementById('btn-start-camera').classList.remove('hidden');
+      document.getElementById('btn-take-photo').classList.add('hidden');
+    }
+
+    function resetPhotoUI() {
+      stopCamera();
+      document.getElementById('form-photo').value = '';
+      document.getElementById('product-preview').classList.add('hidden');
+      document.getElementById('product-preview').src = '';
+      document.getElementById('photo-placeholder').classList.remove('hidden');
+    }
+
     function resetForm() {
       document.getElementById('form-product-id').value = '';
       document.getElementById('form-name').value = '';
@@ -294,14 +371,16 @@
       document.getElementById('form-category').value = 'Dispensa';
       document.getElementById('form-expiry').value = '';
       document.getElementById('form-notes').value = '';
+      resetPhotoUI();
       document.getElementById('form-title').innerHTML = `<i data-lucide="plus-circle" class="w-5 h-5 text-brand-500"></i> Dati Prodotto`;
       lucide.createIcons();
     }
 
-    // FUNZIONE DI MODIFICA: Carica i dati e attiva la visualizzazione corretta
     function editProduct(id) {
       const product = products.find(p => p.id === id);
       if (!product) return;
+
+      resetForm();
 
       document.getElementById('form-product-id').value = product.id;
       document.getElementById('form-name').value = product.name || '';
@@ -310,6 +389,14 @@
       document.getElementById('form-category').value = product.category || 'Dispensa';
       document.getElementById('form-expiry').value = product.expiry || '';
       document.getElementById('form-notes').value = product.notes || '';
+      
+      if (product.photo) {
+        document.getElementById('form-photo').value = product.photo;
+        const preview = document.getElementById('product-preview');
+        preview.src = product.photo;
+        preview.classList.remove('hidden');
+        document.getElementById('photo-placeholder').classList.add('hidden');
+      }
       
       document.getElementById('form-title').innerHTML = `<i data-lucide="edit" class="w-5 h-5 text-brand-500"></i> Modifica Prodotto`;
       lucide.createIcons();
@@ -325,6 +412,7 @@
       const category = document.getElementById('form-category').value;
       const expiry = document.getElementById('form-expiry').value;
       const notes = document.getElementById('form-notes').value.trim();
+      const photo = document.getElementById('form-photo').value;
 
       if (!name || !expiry) {
         showToast("Inserisci nome e data di scadenza!");
@@ -332,7 +420,6 @@
       }
 
       if (productId) {
-        // Aggiorna prodotto esistente
         const index = products.findIndex(p => p.id === productId);
         if (index !== -1) {
           products[index] = {
@@ -342,12 +429,12 @@
             brand: brand,
             category: category,
             expiry: expiry,
-            notes: notes
+            notes: notes,
+            photo: photo
           };
           showToast("Prodotto modificato con successo!");
         }
       } else {
-        // Crea nuovo prodotto
         const newProduct = {
           id: 'p_' + Date.now(),
           name: name,
@@ -355,7 +442,8 @@
           brand: brand,
           category: category,
           expiry: expiry,
-          notes: notes
+          notes: notes,
+          photo: photo
         };
         products.push(newProduct);
         showToast("Prodotto salvato!");
@@ -364,7 +452,7 @@
       try {
         localStorage.setItem('scanean_products', JSON.stringify(products));
       } catch(e) {
-        showToast("Errore di memoria! Svuota i Report.");
+        showToast("Errore di memoria! Libera spazio cancellando vecchi prodotti.");
         return;
       }
       
@@ -389,14 +477,18 @@
         filtered.forEach(p => {
           const div = document.createElement('div');
           div.className = 'bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-3 cursor-pointer active:bg-slate-50 transition-colors';
-          // Al click sulla riga si apre il dettaglio in modifica
           div.setAttribute('onclick', `editProduct('${p.id}')`);
           
+          // Se presente la foto viene mostrata in lista, altrimenti viene mostrata l'icona del pacchetto standard
+          const imgHTML = p.photo 
+            ? `<img src="${p.photo}" class="w-10 h-10 object-cover rounded-lg border border-slate-100 shrink-0">`
+            : `<div class="w-10 h-10 bg-slate-50 border border-slate-100 rounded-lg flex items-center justify-center text-slate-300 shrink-0">
+                <i data-lucide="package" class="w-5 h-5 text-brand-500"></i>
+               </div>`;
+
           div.innerHTML = `
             <div class="flex items-center gap-3 min-w-0 flex-1">
-              <div class="w-10 h-10 bg-slate-50 border border-slate-100 rounded-lg flex items-center justify-center text-slate-300 shrink-0">
-                <i data-lucide="package" class="w-5 h-5 text-brand-500"></i>
-              </div>
+              ${imgHTML}
               <div class="min-w-0 flex-1">
                 <span class="text-xs font-bold text-slate-900 block truncate">${p.name}</span>
                 <p class="text-[11px] text-slate-500 truncate">${p.brand || 'Nessuna marca'} &bull; ${p.category}</p>
@@ -445,6 +537,7 @@
       renderProducts();
     }
 
+    // ... (restanti funzioni di statistiche e scansione EAN inalterate) ...
     function updateDashboardStats() {
       const el = document.getElementById('stat-expired');
       if (el) el.textContent = products.length;
