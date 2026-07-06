@@ -139,19 +139,27 @@
         
         <input type="hidden" id="form-product-id" value="">
 
-        <div class="space-y-1.5 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-xl p-3 bg-slate-50 relative min-h-[120px]">
-          <video id="product-video" autoplay playsinline class="hidden w-full max-h-48 object-cover rounded-lg bg-black"></video>
-          <img id="product-preview" class="hidden w-24 h-24 object-cover rounded-lg border shadow-sm" src="">
-          <div id="photo-placeholder" class="text-center py-2">
-            <i data-lucide="camera" class="w-8 h-8 text-slate-300 mx-auto mb-1"></i>
-            <span class="text-[11px] text-slate-400 block font-medium">Nessuna foto associata</span>
+        <div class="w-full bg-slate-100 rounded-xl p-4 border border-slate-200 flex flex-col items-center justify-center gap-3">
+          <div class="text-xs font-bold text-slate-500 self-start flex items-center gap-1.5 w-full border-b border-slate-200 pb-1.5">
+            <i data-lucide="camera" class="w-4 h-4 text-slate-500"></i> Foto Prodotto
           </div>
-          <div class="flex gap-2 mt-2 w-full justify-center">
-            <button type="button" id="btn-start-camera" onclick="startCamera()" class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 flex items-center gap-1 shadow-xs">
-              <i data-lucide="video" class="w-3.5 h-3.5 text-brand-500"></i> Attiva Fotocamera
+
+          <div class="w-full flex items-center justify-center bg-white border border-slate-200 rounded-lg overflow-hidden min-h-[140px] relative">
+            <video id="product-video" autoplay playsinline class="hidden w-full max-h-48 object-cover bg-black"></video>
+            <img id="product-preview" class="hidden w-32 h-32 object-cover rounded-md my-2 shadow-xs border" src="">
+            
+            <div id="photo-placeholder" class="text-center py-6">
+              <i data-lucide="image-off" class="w-8 h-8 text-slate-300 mx-auto mb-1.5"></i>
+              <span class="text-xs text-slate-400 block font-medium">Nessuna foto scattata</span>
+            </div>
+          </div>
+
+          <div class="w-full flex gap-2 justify-center">
+            <button type="button" id="btn-start-camera" onclick="startCamera()" class="w-full py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-all shadow-xs">
+              <i data-lucide="video" class="w-4 h-4 text-brand-500"></i> Accendi Fotocamera
             </button>
-            <button type="button" id="btn-take-photo" onclick="takePhoto()" class="hidden px-3 py-1.5 bg-brand-500 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-xs">
-              <i data-lucide="aperture" class="w-3.5 h-3.5"></i> Scatta Foto
+            <button type="button" id="btn-take-photo" onclick="takePhoto()" class="hidden w-full py-2 bg-brand-500 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-2 hover:bg-brand-600 transition-all shadow-sm">
+              <i data-lucide="aperture" class="w-4 h-4"></i> Cattura Immagine
             </button>
           </div>
           <input type="hidden" id="form-photo" value="">
@@ -296,7 +304,7 @@
       }
     }
 
-    // GESTIONE INTEGRATA FOTOCAMERA PRODOTTO
+    // GESTIONE INTEGRATA FOTOCAMERA PRODOTTO CORRETTA
     function startCamera() {
       const video = document.getElementById('product-video');
       const placeholder = document.getElementById('photo-placeholder');
@@ -323,12 +331,10 @@
       const video = document.getElementById('product-video');
       const canvas = document.createElement('canvas');
       
-      // Compressione automatica dell'immagine per non saturare il LocalStorage
       canvas.width = 240;
       canvas.height = 240;
       const ctx = canvas.getContext('2d');
       
-      // Ritaglio quadrato centrato della sorgente video
       const minDim = Math.min(video.videoWidth, video.videoHeight);
       const sx = (video.videoWidth - minDim) / 2;
       const sy = (video.videoHeight - minDim) / 2;
@@ -479,7 +485,6 @@
           div.className = 'bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-3 cursor-pointer active:bg-slate-50 transition-colors';
           div.setAttribute('onclick', `editProduct('${p.id}')`);
           
-          // Se presente la foto viene mostrata in lista, altrimenti viene mostrata l'icona del pacchetto standard
           const imgHTML = p.photo 
             ? `<img src="${p.photo}" class="w-10 h-10 object-cover rounded-lg border border-slate-100 shrink-0">`
             : `<div class="w-10 h-10 bg-slate-50 border border-slate-100 rounded-lg flex items-center justify-center text-slate-300 shrink-0">
@@ -507,15 +512,8 @@
       lucide.createIcons();
     }
 
-    function filterCategory(event, category) {
+    function filterCategory(category) {
       activeCategory = category;
-      const buttons = document.querySelectorAll('.category-btn');
-      buttons.forEach(btn => {
-        btn.classList.remove('bg-brand-500', 'text-white', 'active');
-        btn.classList.add('bg-white', 'text-slate-600', 'border', 'border-slate-200');
-      });
-      event.currentTarget.classList.remove('bg-white', 'text-slate-600', 'border', 'border-slate-200');
-      event.currentTarget.classList.add('bg-brand-500', 'text-white', 'active');
       renderProducts();
     }
 
@@ -537,7 +535,6 @@
       renderProducts();
     }
 
-    // ... (restanti funzioni di statistiche e scansione EAN inalterate) ...
     function updateDashboardStats() {
       const el = document.getElementById('stat-expired');
       if (el) el.textContent = products.length;
