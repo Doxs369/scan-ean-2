@@ -78,6 +78,7 @@
 
   <main class="flex-1 overflow-y-auto pb-28 px-4 pt-4 no-scrollbar">
     
+    <!-- DASHBOARD DI DISPENSA -->
     <section id="view-dashboard" class="space-y-4">
       <div class="relative">
         <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
@@ -113,18 +114,9 @@
       </div>
     </section>
 
+    <!-- SCHERMATA SCANNER -->
     <section id="view-scan" class="hidden space-y-4">
       <div class="bg-white rounded-2xl overflow-hidden relative border border-slate-200 shadow-sm flex flex-col items-center justify-center min-h-[240px]">
-        <div id="scanner-security-alert" class="hidden p-6 text-center space-y-3 z-10 absolute inset-0 bg-white flex flex-col items-center justify-center">
-          <div class="p-3 bg-accent-50 rounded-full text-accent-500">
-            <i data-lucide="shield-alert" class="w-8 h-8"></i>
-          </div>
-          <p class="text-xs font-bold text-slate-800">La fotocamera richiede HTTPS</p>
-          <button onclick="switchView('add')" class="px-4 py-2 bg-brand-500 text-white rounded-xl text-xs font-semibold shadow-sm">
-            Vai a Inserimento Manuale
-          </button>
-        </div>
-
         <div id="scanner-reader" class="w-full aspect-[4/3] bg-black"></div>
         <div class="absolute inset-0 border-2 border-brand-500/50 pointer-events-none rounded-2xl"></div>
         <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-56 h-36 border-2 border-dashed border-accent-500 rounded flex items-center justify-center pointer-events-none">
@@ -139,6 +131,7 @@
       </div>
     </section>
 
+    <!-- SCHERMATA DETTAGLIO / INSERIMENTO -->
     <section id="view-add" class="hidden space-y-4">
       <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
         <div class="flex justify-between items-center">
@@ -151,12 +144,13 @@
           <label class="text-xs font-bold text-slate-500">Codice EAN / QR</label>
           <div class="flex gap-2">
             <input type="text" id="form-barcode" placeholder="EAN o QR" class="flex-1 bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-mono text-slate-800">
-            <button onclick="checkAndAutofillProduct()" class="px-4 bg-brand-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1 shadow-sm shrink-0">
+            <button type="button" onclick="checkAndAutofillProduct()" class="px-4 bg-brand-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1 shadow-sm shrink-0">
               <i data-lucide="search" class="w-3.5 h-3.5"></i> Cerca
             </button>
           </div>
         </div>
 
+        <!-- SEZIONE FOTO PRODOTTO (Anteprima Ingrandita w-48 h-48) -->
         <div class="space-y-2">
           <label class="text-xs font-bold text-slate-500 block">Foto Prodotto</label>
           <div class="flex flex-col items-center justify-center gap-4 p-4 bg-slate-50 border border-dashed border-slate-200 rounded-xl">
@@ -217,6 +211,7 @@
       </div>
     </section>
 
+    <!-- REPORT / IMPOSTAZIONI -->
     <section id="view-stats" class="hidden space-y-4">
       <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
         <h2 class="text-md font-bold text-slate-900 flex items-center gap-2">
@@ -291,7 +286,7 @@
       const activeView = document.getElementById(`view-${viewId}`);
       if (activeView) activeView.classList.remove('hidden');
       const activeNav = document.getElementById(`nav-${viewId}`);
-      if (activeNav) { activeNav.classList.remove('text-slate-400'); activeNav.classList.add('text-brand-500'); }
+      if (activeNav) { activeNav.classList.remove('text-slate-400'); activeNav.mathbf{classList}.add('text-brand-500'); }
 
       if (viewId !== 'scan') stopScanning();
       if (viewId === 'stats') renderStats();
@@ -347,38 +342,25 @@
       removeSelectedImage();
     }
 
+    // CARICA SOLO L'IMMAGINE SE L'EAN ESISTE GIÀ, lasciando vuoti i dati di scadenza/note per creare un nuovo prodotto!
     function checkAndAutofillProduct() {
       const barcode = document.getElementById('form-barcode').value.trim();
-      if (!barcode) {
-        removeSelectedImage();
-        return;
-      }
+      if (!barcode) return;
 
       if (globalCatalog[barcode]) {
         const saved = globalCatalog[barcode];
+        // Compila nome e marca storici se presenti
         document.getElementById('form-name').value = saved.name || "";
         document.getElementById('form-brand').value = saved.brand || "";
-        document.getElementById('form-category').value = saved.category || "Dispensa";
         
         if (saved.image) {
           currentProductImageBase64 = saved.image;
           displayImagePreview(saved.image);
+          showToast("Immagine storica caricata automaticamente!");
         } else {
           removeSelectedImage();
         }
-        showToast("Prodotto e foto caricati!");
-      } else {
-        document.getElementById('form-name').value = "";
-        document.getElementById('form-brand').value = "";
-        removeSelectedImage();
       }
-    }
-
-    function openProductDetails(barcode) {
-      resetForm();
-      switchView('add');
-      document.getElementById('form-barcode').value = barcode;
-      checkAndAutofillProduct();
     }
 
     function saveProduct() {
@@ -394,16 +376,17 @@
         return;
       }
 
+      // Salva l'immagine nell'archivio fotografico generale legato all'EAN
       if (barcode) {
         globalCatalog[barcode] = {
           name: name,
           brand: brand,
-          category: category,
           image: currentProductImageBase64 || (globalCatalog[barcode] ? globalCatalog[barcode].image : "")
         };
         localStorage.setItem('scanean_catalog', JSON.stringify(globalCatalog));
       }
 
+      // Crea un NUOVO prodotto indipendente nella dispensa corrente
       const newProduct = {
         id: 'p_' + Date.now(),
         name,
@@ -412,41 +395,16 @@
         category,
         expiry,
         notes,
-        image: currentProductImageBase64 || (barcode ? globalCatalog[barcode].image : "")
+        image: currentProductImageBase64 || (barcode && globalCatalog[barcode] ? globalCatalog[barcode].image : "")
       };
 
       products.push(newProduct);
       localStorage.setItem('scanean_products', JSON.stringify(products));
       
-      // Reset dei filtri per mostrare subito tutto in lista senza blocchi
-      activeCategory = 'all';
-      const catButtons = document.querySelectorAll('.category-btn');
-      catButtons.forEach(btn => {
-        btn.classList.remove('bg-brand-500', 'text-white', 'active');
-        btn.classList.add('bg-white', 'text-slate-600', 'border', 'border-slate-200');
-      });
-      const allBtn = document.querySelector(".category-btn[onclick*='all']");
-      if (allBtn) {
-        allBtn.classList.remove('bg-white', 'text-slate-600', 'border', 'border-slate-200');
-        allBtn.classList.add('bg-brand-500', 'text-white', 'active');
-      }
-
       resetForm();
-      showToast("Salvataggio completato!");
+      showToast("Prodotto salvato in dispensa!");
       updateDashboardStats();
       switchView('dashboard');
-      renderProducts();
-    }
-
-    function filterCategory(event, category) {
-      activeCategory = category;
-      const buttons = document.querySelectorAll('.category-btn');
-      buttons.forEach(btn => {
-        btn.classList.remove('bg-brand-500', 'text-white', 'active');
-        btn.classList.add('bg-white', 'text-slate-600', 'border', 'border-slate-200');
-      });
-      event.currentTarget.classList.remove('bg-white', 'text-slate-600', 'border', 'border-slate-200');
-      event.currentTarget.classList.add('bg-brand-500', 'text-white', 'active');
       renderProducts();
     }
 
@@ -464,31 +422,44 @@
         emptyState.classList.add('hidden');
         filtered.forEach(p => {
           const div = document.createElement('div');
-          div.className = 'bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-3 cursor-pointer active:bg-slate-50 transition';
+          div.className = 'bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-3';
           
-          const finalImg = p.image || (p.barcode && globalCatalog[p.barcode] ? globalCatalog[p.barcode].image : "");
+          const finalImg = p.image;
           const imageHtml = finalImg 
             ? `<div class="w-10 h-10 rounded-lg overflow-hidden border border-slate-100 shrink-0"><img src="${finalImg}" class="w-full h-full object-cover"></div>`
             : `<div class="w-10 h-10 bg-slate-50 border border-slate-100 rounded-lg flex items-center justify-center text-slate-300 shrink-0"><i data-lucide="package" class="w-5 h-5"></i></div>`;
 
           div.innerHTML = `
-            <div class="flex items-center gap-3 min-w-0 flex-1" onclick="openProductDetails('${p.barcode || ''}')">
+            <div class="flex items-center gap-3 min-w-0 flex-1">
               ${imageHtml}
               <div class="min-w-0 flex-1">
                 <span class="text-xs font-bold text-slate-900 block truncate">${p.name}</span>
                 <p class="text-[11px] text-slate-500 truncate">${p.brand || 'Nessuna marca'} &bull; ${p.category}</p>
                 <p class="text-[10px] text-brand-600 font-semibold mt-0.5">Scadenza: ${p.expiry}</p>
+                ${p.notes ? `<p class="text-[10px] text-slate-400 italic truncate">Note: ${p.notes}</p>` : ''}
               </div>
             </div>
-            <div class="flex gap-1.5 z-10">
-              <button onclick="event.stopPropagation(); consumeProduct('${p.id}')" class="p-2 bg-brand-50 text-brand-600 rounded-lg"><i data-lucide="check" class="w-4 h-4"></i></button>
-              <button onclick="event.stopPropagation(); throwProduct('${p.id}')" class="p-2 bg-red-50 text-red-600 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            <div class="flex gap-1.5 shrink-0">
+              <button onclick="consumeProduct('${p.id}')" class="p-2 bg-brand-50 text-brand-600 rounded-lg"><i data-lucide="check" class="w-4 h-4"></i></button>
+              <button onclick="throwProduct('${p.id}')" class="p-2 bg-red-50 text-red-600 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
             </div>
           `;
           container.appendChild(div);
         });
       }
       lucide.createIcons();
+    }
+
+    function filterCategory(event, category) {
+      activeCategory = category;
+      const buttons = document.querySelectorAll('.category-btn');
+      buttons.forEach(btn => {
+        btn.classList.remove('bg-brand-500', 'text-white', 'active');
+        btn.classList.add('bg-white', 'text-slate-600', 'border', 'border-slate-200');
+      });
+      event.currentTarget.classList.remove('bg-white', 'text-slate-600', 'border', 'border-slate-200');
+      event.currentTarget.classList.add('bg-brand-500', 'text-white', 'active');
+      renderProducts();
     }
 
     function consumeProduct(id) {
@@ -532,6 +503,7 @@
       if (!html5QrScanner) html5QrScanner = new Html5Qrcode("scanner-reader");
       html5QrScanner.start({ facingMode: "environment" }, { fps: 15, qrbox: 200 }, (decodedText) => {
         stopScanning();
+        resetForm();
         document.getElementById('form-barcode').value = decodedText;
         switchView('add');
         checkAndAutofillProduct();
