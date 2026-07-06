@@ -78,11 +78,10 @@
 
   <main class="flex-1 overflow-y-auto pb-28 px-4 pt-4 no-scrollbar">
     
-    <!-- DASHBOARD DI DISPENSA -->
     <section id="view-dashboard" class="space-y-4">
       <div class="relative">
         <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
-        <input type="text" id="search-input" placeholder="Cerca per nome, marca o codice..." class="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 text-slate-800 placeholder-slate-400 shadow-sm">
+        <input type="text" id="search-input" oninput="renderProducts()" placeholder="Cerca per nome, marca o codice..." class="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 text-slate-800 placeholder-slate-400 shadow-sm">
       </div>
 
       <div class="flex gap-2 overflow-x-auto no-scrollbar py-1">
@@ -114,7 +113,6 @@
       </div>
     </section>
 
-    <!-- SCHERMATA SCANNER -->
     <section id="view-scan" class="hidden space-y-4">
       <div class="bg-white rounded-2xl overflow-hidden relative border border-slate-200 shadow-sm flex flex-col items-center justify-center min-h-[240px]">
         <div id="scanner-reader" class="w-full aspect-[4/3] bg-black"></div>
@@ -131,7 +129,6 @@
       </div>
     </section>
 
-    <!-- SCHERMATA DETTAGLIO / INSERIMENTO -->
     <section id="view-add" class="hidden space-y-4">
       <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
         <div class="flex justify-between items-center">
@@ -142,14 +139,11 @@
         
         <input type="hidden" id="form-product-id" value="">
 
-        <!-- SEZIONE UNICA FOTOCAMERA PRODOTTO CON ICONA DI SCATTO DIRETTO -->
         <div class="space-y-2 border border-slate-200 rounded-xl p-3 bg-slate-50 flex flex-col items-center justify-center">
           <span class="text-xs font-bold text-slate-500 self-start">Foto del Prodotto (Abbina a EAN)</span>
           
           <div class="w-full relative flex items-center justify-center bg-white rounded-lg overflow-hidden border border-slate-200 min-h-[130px]">
-            <!-- Finestra Video per inquadratura -->
             <video id="product-video" autoplay playsinline class="hidden w-full max-h-44 object-cover bg-black"></video>
-            <!-- Anteprima dell'immagine scattata -->
             <img id="product-preview" class="hidden w-28 h-28 object-cover rounded-md my-2 border shadow-sm" src="">
             
             <div id="photo-placeholder" class="text-center py-5">
@@ -158,7 +152,6 @@
             </div>
           </div>
 
-          <!-- Pulsante Unico con Icona Fotocamera Dinamico -->
           <button type="button" id="btn-camera-action" onclick="handleCameraAction()" class="w-full py-2.5 bg-brand-500 text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm active:bg-brand-600 transition-all">
             <i id="camera-icon" data-lucide="camera" class="w-4 h-4"></i>
             <span id="camera-text">Scatta Foto Prodotto</span>
@@ -212,7 +205,6 @@
       </div>
     </section>
 
-    <!-- REPORT / IMPOSTAZIONI -->
     <section id="view-stats" class="hidden space-y-4">
       <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
         <h2 class="text-md font-bold text-slate-900 flex items-center gap-2">
@@ -255,20 +247,49 @@
   </div>
 
   <script>
-    let products = JSON.parse(localStorage.getItem('scanean_products')) || [];
+    let products = [];
     let consumedCount = parseInt(localStorage.getItem('scanean_consumed')) || 0;
     let thrownCount = parseInt(localStorage.getItem('scanean_thrown')) || 0;
     let activeCategory = 'all';
     let html5QrScanner = null;
     let cameraStream = null;
     let isCameraActive = false;
+    let db = null;
+
+    // APERTURA SICURA DI INDEXEDDB
+    const dbRequest = indexedDB.open("ScanEanDB", 1);
+    
+    dbRequest.onupgradeneeded = function(event) {
+      let database = event.target.result;
+      if (!database.objectStoreNames.contains("products")) {
+        database.createObjectStore("products", { keyPath: "id" });
+      }
+    };
+
+    dbRequest.onsuccess = function(event) {
+      db = event.target.result;
+      loadProductsFromDB();
+    };
+
+    dbRequest.onerror = function() {
+      showToast("Errore nell'inizializzazione della memoria.");
+    };
+
+    function loadProductsFromDB(callback) {
+      if (!db) return;
+      const transaction = db.transaction(["products"], "readonly");
+      const store = transaction.objectStore("products");
+      const request = store.getAll();
+
+      request.onsuccess = function() {
+        products = request.result || [];
+        renderProducts();
+        updateDashboardStats();
+        if (callback) callback();
+      };
+    }
 
     lucide.createIcons();
-
-    window.addEventListener('DOMContentLoaded', () => {
-      renderProducts();
-      updateDashboardStats();
-    });
 
     function switchView(viewId) {
       const views = ['dashboard', 'scan', 'add', 'stats'];
@@ -307,7 +328,6 @@
       }
     }
 
-    // FUNZIONE DI AUTOCAMPIONAMENTO DA EAN CONOSCIUTO
     function checkExistingEan(barcodeText) {
       if (!barcodeText || document.getElementById('form-product-id').value !== '') return;
       
@@ -335,7 +355,6 @@
       }
     }
 
-    // LOGICA DI CONTROLLO DINAMICA DEL PULSANTE FOTOCAMERA
     function handleCameraAction() {
       if (!isCameraActive) {
         const video = document.getElementById('product-video');
@@ -375,7 +394,7 @@
         
         ctx.drawImage(video, sx, sy, minDim, minDim, 0, 0, canvas.width, canvas.height);
         
-        const base64 = canvas.toDataURL('image/jpeg', 0.7);
+        const base64 = canvas.toDataURL('image/jpeg', 0.6);
         document.getElementById('form-photo').value = base64;
         
         const preview = document.getElementById('product-preview');
@@ -465,56 +484,50 @@
         return;
       }
 
+      let targetProduct;
+      let isNew = false;
+
       if (productId) {
-        const index = products.findIndex(p => p.id === productId);
-        if (index !== -1) {
-          products[index] = {
-            id: productId,
-            name: name,
-            barcode: barcode,
-            brand: brand,
-            category: category,
-            expiry: expiry,
-            notes: notes,
-            photo: photo
-          };
-          showToast("Prodotto modificato con successo!");
-        }
+        targetProduct = { id: productId, name, barcode, brand, category, expiry, notes, photo };
       } else {
-        const newProduct = {
-          id: 'p_' + Date.now(),
-          name: name,
-          barcode: barcode,
-          brand: brand,
-          category: category,
-          expiry: expiry,
-          notes: notes,
-          photo: photo
-        };
-        products.push(newProduct);
-        showToast("Prodotto salvato!");
+        isNew = true;
+        targetProduct = { id: 'p_' + Date.now(), name, barcode, brand, category, expiry, notes, photo };
       }
-      
-      try {
-        localStorage.setItem('scanean_products', JSON.stringify(products));
-      } catch(e) {
-        showToast("Errore di memoria! Libera spazio cancellando vecchi prodotti.");
-        return;
-      }
-      
-      resetForm();
-      updateDashboardStats();
-      switchView('dashboard');
-      renderProducts();
+
+      // USO DI TRANSAZIONI PROTETTE CON ONCOMPLETE SINCRONIZZATO
+      const transaction = db.transaction(["products"], "readwrite");
+      const store = transaction.objectStore("products");
+      store.put(targetProduct);
+
+      transaction.oncomplete = function() {
+        showToast(isNew ? "Prodotto salvato!" : "Prodotto modificato!");
+        resetForm();
+        loadProductsFromDB(() => {
+          switchView('dashboard');
+        });
+      };
+
+      transaction.onerror = function() {
+        showToast("Errore durante il salvataggio.");
+      };
     }
 
     function renderProducts() {
       const container = document.getElementById('products-container');
       const emptyState = document.getElementById('empty-state');
+      const searchQuery = document.getElementById('search-input').value.toLowerCase().trim();
+      
       if (!container) return;
       container.innerHTML = '';
 
-      let filtered = products.filter(p => activeCategory === 'all' || p.category === activeCategory);
+      let filtered = products.filter(p => {
+        const matchesCategory = (activeCategory === 'all' || p.category === activeCategory);
+        const matchesSearch = !searchQuery || 
+                              p.name.toLowerCase().includes(searchQuery) || 
+                              (p.brand && p.brand.toLowerCase().includes(searchQuery)) || 
+                              (p.barcode && p.barcode.toLowerCase().includes(searchQuery));
+        return matchesCategory && matchesSearch;
+      });
 
       if (filtered.length === 0) {
         emptyState.classList.remove('hidden');
@@ -565,21 +578,27 @@
     }
 
     function consumeProduct(id) {
-      products = products.filter(p => p.id !== id);
       consumedCount++;
-      localStorage.setItem('scanean_products', JSON.stringify(products));
       localStorage.setItem('scanean_consumed', consumedCount);
-      updateDashboardStats();
-      renderProducts();
+      
+      const transaction = db.transaction(["products"], "readwrite");
+      transaction.objectStore("products").delete(id);
+      
+      transaction.oncomplete = function() {
+        loadProductsFromDB();
+      };
     }
 
     function throwProduct(id) {
-      products = products.filter(p => p.id !== id);
       thrownCount++;
-      localStorage.setItem('scanean_products', JSON.stringify(products));
       localStorage.setItem('scanean_thrown', thrownCount);
-      updateDashboardStats();
-      renderProducts();
+      
+      const transaction = db.transaction(["products"], "readwrite");
+      transaction.objectStore("products").delete(id);
+      
+      transaction.oncomplete = function() {
+        loadProductsFromDB();
+      };
     }
 
     function updateDashboardStats() {
@@ -594,10 +613,18 @@
 
     function clearDatabase() {
       if (confirm("Vuoi azzerare completamente la dispensa?")) {
-        products = []; consumedCount = 0; thrownCount = 0;
-        localStorage.clear();
-        updateDashboardStats(); renderProducts();
-        switchView('dashboard');
+        const transaction = db.transaction(["products"], "readwrite");
+        const store = transaction.objectStore("products");
+        store.clear();
+        
+        transaction.oncomplete = function() {
+          consumedCount = 0; thrownCount = 0;
+          localStorage.removeItem('scanean_consumed');
+          localStorage.removeItem('scanean_thrown');
+          loadProductsFromDB();
+          switchView('dashboard');
+          showToast("Database azzerato.");
+        };
       }
     }
 
@@ -607,10 +634,7 @@
         stopScanning();
         resetForm();
         document.getElementById('form-barcode').value = decodedText;
-        
-        // Verifica immediata se l'EAN scansionato esiste già
         checkExistingEan(decodedText);
-        
         switchView('add');
       }, () => {});
     }
