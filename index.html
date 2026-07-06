@@ -84,23 +84,8 @@
         <input type="text" id="search-input" oninput="renderProducts()" placeholder="Cerca per nome, marca o codice..." class="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 text-slate-800 placeholder-slate-400 shadow-sm">
       </div>
 
-      <div class="flex gap-2 overflow-x-auto no-scrollbar py-1">
-        <button onclick="filterCategory(event, 'all')" class="category-btn active px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all bg-brand-500 text-white shadow-sm">
-          Tutti
-        </button>
-        <button onclick="filterCategory(event, 'Frigorifero')" class="category-btn px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all bg-white text-slate-600 border border-slate-200 hover:border-slate-300 shadow-sm">
-          ❄️ Frigorifero
-        </button>
-        <button onclick="filterCategory(event, 'Dispensa')" class="category-btn px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all bg-white text-slate-600 border border-slate-200 hover:border-slate-300 shadow-sm">
-          🌾 Dispensa
-        </button>
-        <button onclick="filterCategory(event, 'Congelatore')" class="category-btn px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all bg-white text-slate-600 border border-slate-200 hover:border-slate-300 shadow-sm">
-          🧊 Congelatore
-        </button>
-        <button onclick="filterCategory(event, 'Casa e Farmaci')" class="category-btn px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all bg-white text-slate-600 border border-slate-200 hover:border-slate-300 shadow-sm">
-          💊 Casa e Farmaci
-        </button>
-      </div>
+      <div id="category-filters" class="flex gap-2 overflow-x-auto no-scrollbar py-1">
+        </div>
 
       <div id="products-container" class="space-y-3"></div>
       
@@ -173,14 +158,16 @@
             <label class="text-xs font-bold text-slate-500">Marca</label>
             <input type="text" id="form-brand" placeholder="Es. Barilla" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800">
           </div>
+          
           <div class="space-y-1.5">
             <label class="text-xs font-bold text-slate-500">Posizione</label>
-            <select id="form-category" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800">
-              <option value="Frigorifero">Frigorifero</option>
-              <option value="Dispensa" selected>Dispensa</option>
-              <option value="Congelatore">Congelatore</option>
-              <option value="Casa e Farmaci">Casa e Farmaci</option>
-            </select>
+            <div class="flex gap-1.5">
+              <select id="form-category" class="flex-1 bg-slate-100 border border-slate-200 rounded-xl px-2 py-2.5 text-xs text-slate-800 focus:outline-none">
+                </select>
+              <button type="button" onclick="addNewCategory()" class="p-2.5 bg-brand-500 text-white rounded-xl hover:bg-brand-600 shadow-sm flex items-center justify-center shrink-0">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -248,6 +235,8 @@
 
   <script>
     let products = [];
+    // Posizioni base predefinite
+    let categories = ["Frigorifero", "Dispensa", "Congelatore", "Casa e Farmaci"];
     let consumedCount = parseInt(localStorage.getItem('scanean_consumed')) || 0;
     let thrownCount = parseInt(localStorage.getItem('scanean_thrown')) || 0;
     let activeCategory = 'all';
@@ -256,24 +245,54 @@
     let isCameraActive = false;
     let db = null;
 
-    // APERTURA SICURA DI INDEXEDDB
-    const dbRequest = indexedDB.open("ScanEanDB", 1);
+    // APERTURA / AGGIORNAMENTO DI INDEXEDDB CON SUPPORTO PER LE CATEGORIE
+    const dbRequest = indexedDB.open("ScanEanDB", 2);
     
     dbRequest.onupgradeneeded = function(event) {
       let database = event.target.result;
       if (!database.objectStoreNames.contains("products")) {
         database.createObjectStore("products", { keyPath: "id" });
       }
+      if (!database.objectStoreNames.contains("categories")) {
+        database.createObjectStore("categories", { autoIncrement: true });
+      }
     };
 
     dbRequest.onsuccess = function(event) {
       db = event.target.result;
-      loadProductsFromDB();
+      loadCategoriesFromDB(() => {
+        loadProductsFromDB();
+      });
     };
 
     dbRequest.onerror = function() {
       showToast("Errore nell'inizializzazione della memoria.");
     };
+
+    function loadCategoriesFromDB(callback) {
+      if (!db) return;
+      const transaction = db.transaction(["categories"], "readonly");
+      const store = transaction.objectStore("categories");
+      const request = store.getAll();
+
+      request.onsuccess = function() {
+        if (request.result && request.result.length > 0) {
+          categories = request.result;
+        } else {
+          // Se vuoto, salviamo quelle base la prima volta
+          saveInitialCategories();
+        }
+        updateCategorySelectOptions();
+        renderCategoryFilters();
+        if (callback) callback();
+      };
+    }
+
+    function saveInitialCategories() {
+      const transaction = db.transaction(["categories"], "readwrite");
+      const store = transaction.objectStore("categories");
+      categories.forEach(cat => store.add(cat));
+    }
 
     function loadProductsFromDB(callback) {
       if (!db) return;
@@ -283,10 +302,72 @@
 
       request.onsuccess = function() {
         products = request.result || [];
+        renderCategoryFilters(); // Ridisegna i filtri per aggiornare lo stato di selezione
         renderProducts();
         updateDashboardStats();
         if (callback) callback();
       };
+    }
+
+    // AGGIUNGE UNA NUOVA POSIZIONE PERSONALIZZATA
+    function addNewCategory() {
+      const newCat = prompt("Inserisci il nome della nuova posizione (es. Cantina, Dispensa Secondaria):");
+      if (!newCat || newCat.trim() === "") return;
+      
+      const cleanedCat = newCat.trim();
+      
+      if (categories.includes(cleanedCat)) {
+        showToast("Questa posizione esiste già!");
+        return;
+      }
+
+      categories.push(cleanedCat);
+      
+      const transaction = db.transaction(["categories"], "readwrite");
+      const store = transaction.objectStore("categories");
+      store.add(cleanedCat);
+
+      transaction.oncomplete = function() {
+        showToast("Nuova posizione aggiunta!");
+        updateCategorySelectOptions();
+        renderCategoryFilters();
+        document.getElementById('form-category').value = cleanedCat;
+      };
+    }
+
+    function updateCategorySelectOptions() {
+      const select = document.getElementById('form-category');
+      if (!select) return;
+      select.innerHTML = '';
+      categories.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat;
+        option.textContent = cat;
+        if(cat === "Dispensa") option.selected = true;
+        select.appendChild(option);
+      });
+    }
+
+    function renderCategoryFilters() {
+      const container = document.getElementById('category-filters');
+      if (!container) return;
+      container.innerHTML = '';
+
+      // Tasto "Tutti" sempre presente
+      const allBtn = document.createElement('button');
+      allBtn.className = `category-btn px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${activeCategory === 'all' ? 'bg-brand-500 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200'}`;
+      allBtn.textContent = 'Tutti';
+      allBtn.onclick = (e) => filterCategory(e, 'all');
+      container.appendChild(allBtn);
+
+      // Generazione pulsanti per ogni categoria esistente
+      categories.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.className = `category-btn px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${activeCategory === cat ? 'bg-brand-500 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200'}`;
+        btn.textContent = cat;
+        btn.onclick = (e) => filterCategory(e, cat);
+        container.appendChild(btn);
+      });
     }
 
     lucide.createIcons();
@@ -494,7 +575,6 @@
         targetProduct = { id: 'p_' + Date.now(), name, barcode, brand, category, expiry, notes, photo };
       }
 
-      // USO DI TRANSAZIONI PROTETTE CON ONCOMPLETE SINCRONIZZATO
       const transaction = db.transaction(["products"], "readwrite");
       const store = transaction.objectStore("products");
       store.put(targetProduct);
@@ -613,14 +693,19 @@
 
     function clearDatabase() {
       if (confirm("Vuoi azzerare completamente la dispensa?")) {
-        const transaction = db.transaction(["products"], "readwrite");
-        const store = transaction.objectStore("products");
-        store.clear();
+        const transaction = db.transaction(["products", "categories"], "readwrite");
+        transaction.objectStore("products").clear();
+        transaction.objectStore("categories").clear();
         
         transaction.oncomplete = function() {
           consumedCount = 0; thrownCount = 0;
           localStorage.removeItem('scanean_consumed');
           localStorage.removeItem('scanean_thrown');
+          // Ripristina posizioni predefinite
+          categories = ["Frigorifero", "Dispensa", "Congelatore", "Casa e Farmaci"];
+          saveInitialCategories();
+          updateCategorySelectOptions();
+          activeCategory = 'all';
           loadProductsFromDB();
           switchView('dashboard');
           showToast("Database azzerato.");
