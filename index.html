@@ -142,24 +142,20 @@
         <div class="space-y-2 border border-slate-200 rounded-xl p-3 bg-slate-50 flex flex-col items-center justify-center">
           <span class="text-xs font-bold text-slate-500 self-start">Foto del Prodotto (Abbina a EAN)</span>
           
-          <div class="w-full relative flex items-center justify-center bg-white rounded-lg overflow-hidden border border-slate-200 min-h-[120px]">
+          <div class="w-full relative flex items-center justify-center bg-white rounded-lg overflow-hidden border border-slate-200 min-h-[130px]">
             <video id="product-video" autoplay playsinline class="hidden w-full max-h-44 object-cover bg-black"></video>
-            <img id="product-preview" class="hidden w-24 h-24 object-cover rounded-md my-2 border shadow-sm" src="">
+            <img id="product-preview" class="hidden w-28 h-28 object-cover rounded-md my-2 border shadow-sm" src="">
             
-            <div id="photo-placeholder" class="text-center py-4">
-              <i data-lucide="camera" class="w-6 h-6 text-slate-300 mx-auto mb-1"></i>
+            <div id="photo-placeholder" class="text-center py-5">
+              <i data-lucide="image" class="w-6 h-6 text-slate-300 mx-auto mb-1"></i>
               <span class="text-[11px] text-slate-400 block font-medium">Nessuna foto associata</span>
             </div>
           </div>
 
-          <div class="flex gap-2 w-full justify-center">
-            <button type="button" id="btn-start-camera" onclick="startCamera()" class="flex-1 py-2 bg-slate-200 text-slate-700 border border-slate-300 rounded-lg text-xs font-bold uppercase tracking-wider text-center active:bg-slate-300">
-              Attiva Camera
-            </button>
-            <button type="button" id="btn-take-photo" onclick="takePhoto()" class="hidden flex-1 py-2 bg-brand-500 text-white rounded-lg text-xs font-bold uppercase tracking-wider text-center shadow-sm active:bg-brand-600">
-              Scatta Foto
-            </button>
-          </div>
+          <button type="button" id="btn-camera-action" onclick="handleCameraAction()" class="w-full py-2.5 bg-brand-500 text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm active:bg-brand-600 transition-all">
+            <i id="camera-icon" data-lucide="camera" class="w-4 h-4"></i>
+            <span id="camera-text">Scatta Foto Prodotto</span>
+          </button>
           <input type="hidden" id="form-photo" value="">
         </div>
 
@@ -257,6 +253,7 @@
     let activeCategory = 'all';
     let html5QrScanner = null;
     let cameraStream = null;
+    let isCameraActive = false;
 
     lucide.createIcons();
 
@@ -302,50 +299,59 @@
       }
     }
 
-    // LOGICA FUNZIONALE FOTOCAMERA PRODOTTI
-    function startCamera() {
-      const video = document.getElementById('product-video');
-      const placeholder = document.getElementById('photo-placeholder');
-      const preview = document.getElementById('product-preview');
-      
-      placeholder.classList.add('hidden');
-      preview.classList.add('hidden');
-      video.classList.remove('hidden');
+    // LOGICA DI CONTROLLO DINAMICA DEL PULSANTE FOTOCAMERA
+    function handleCameraAction() {
+      if (!isCameraActive) {
+        // Passo 1: Accendi la fotocamera
+        const video = document.getElementById('product-video');
+        const placeholder = document.getElementById('photo-placeholder');
+        const preview = document.getElementById('product-preview');
+        
+        placeholder.classList.add('hidden');
+        preview.classList.add('hidden');
+        video.classList.remove('hidden');
 
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false })
-        .then(stream => {
-          cameraStream = stream;
-          video.srcObject = stream;
-          document.getElementById('btn-take-photo').classList.remove('hidden');
-        })
-        .catch(err => {
-          showToast("Impossibile accedere alla fotocamera");
-          resetPhotoUI();
-        });
-    }
-
-    function takePhoto() {
-      const video = document.getElementById('product-video');
-      const canvas = document.createElement('canvas');
-      
-      canvas.width = 240;
-      canvas.height = 240;
-      const ctx = canvas.getContext('2d');
-      
-      const minDim = Math.min(video.videoWidth, video.videoHeight);
-      const sx = (video.videoWidth - minDim) / 2;
-      const sy = (video.videoHeight - minDim) / 2;
-      
-      ctx.drawImage(video, sx, sy, minDim, minDim, 0, 0, canvas.width, canvas.height);
-      
-      const base64 = canvas.toDataURL('image/jpeg', 0.7);
-      document.getElementById('form-photo').value = base64;
-      
-      const preview = document.getElementById('product-preview');
-      preview.src = base64;
-      preview.classList.remove('hidden');
-      
-      stopCamera();
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false })
+          .then(stream => {
+            cameraStream = stream;
+            video.srcObject = stream;
+            isCameraActive = true;
+            
+            // Aggiorna il pulsante in modalità scatto
+            document.getElementById('camera-text').textContent = "Scatta Ora";
+            const iconEl = document.getElementById('camera-icon');
+            iconEl.setAttribute('data-lucide', 'aperture');
+            lucide.createIcons();
+          })
+          .catch(err => {
+            showToast("Impossibile accedere alla fotocamera");
+            resetPhotoUI();
+          });
+      } else {
+        // Passo 2: Scatta la foto
+        const video = document.getElementById('product-video');
+        const canvas = document.createElement('canvas');
+        
+        canvas.width = 240;
+        canvas.height = 240;
+        const ctx = canvas.getContext('2d');
+        
+        const minDim = Math.min(video.videoWidth, video.videoHeight);
+        const sx = (video.videoWidth - minDim) / 2;
+        const sy = (video.videoHeight - minDim) / 2;
+        
+        ctx.drawImage(video, sx, sy, minDim, minDim, 0, 0, canvas.width, canvas.height);
+        
+        const base64 = canvas.toDataURL('image/jpeg', 0.7);
+        document.getElementById('form-photo').value = base64;
+        
+        const preview = document.getElementById('product-preview');
+        preview.src = base64;
+        preview.classList.remove('hidden');
+        
+        stopCamera();
+        showToast("Foto abbinata al prodotto!");
+      }
     }
 
     function stopCamera() {
@@ -353,8 +359,14 @@
         cameraStream.getTracks().forEach(track => track.stop());
         cameraStream = null;
       }
+      isCameraActive = false;
       document.getElementById('product-video').classList.add('hidden');
-      document.getElementById('btn-take-photo').classList.add('hidden');
+      
+      // Ripristina il pulsante allo stato iniziale
+      document.getElementById('camera-text').textContent = "Scatta Foto Prodotto";
+      const iconEl = document.getElementById('camera-icon');
+      iconEl.setAttribute('data-lucide', 'camera');
+      lucide.createIcons();
     }
 
     function resetPhotoUI() {
@@ -543,7 +555,6 @@
       if (el) el.textContent = products.length;
     }
 
-    // STATS
     function renderStats() {
       document.getElementById('stat-consumed').textContent = consumedCount;
       document.getElementById('stat-thrown').textContent = thrownCount;
