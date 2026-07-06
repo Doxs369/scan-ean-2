@@ -132,11 +132,13 @@
     <section id="view-add" class="hidden space-y-4">
       <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
         <div class="flex justify-between items-center">
-          <h2 class="text-md font-bold text-slate-900 flex items-center gap-2">
+          <h2 id="form-title" class="text-md font-bold text-slate-900 flex items-center gap-2">
             <i data-lucide="plus-circle" class="w-5 h-5 text-brand-500"></i> Dati Prodotto
           </h2>
         </div>
         
+        <input type="hidden" id="form-product-id" value="">
+
         <div class="space-y-1.5">
           <label class="text-xs font-bold text-slate-500">Codice EAN / QR</label>
           <input type="text" id="form-barcode" placeholder="EAN o QR" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-mono text-slate-800">
@@ -267,14 +269,37 @@
     }
 
     function resetForm() {
+      document.getElementById('form-product-id').value = '';
       document.getElementById('form-name').value = '';
       document.getElementById('form-barcode').value = '';
       document.getElementById('form-brand').value = '';
       document.getElementById('form-expiry').value = '';
       document.getElementById('form-notes').value = '';
+      document.getElementById('form-title').innerHTML = `<i data-lucide="plus-circle" class="w-5 h-5 text-brand-500"></i> Dati Prodotto`;
+      lucide.createIcons();
+    }
+
+    // NUOVA FUNZIONE: Carica i dati del prodotto cliccato nel form e apre la schermata
+    function editProduct(id) {
+      const product = products.find(p => p.id === id);
+      if (!product) return;
+
+      document.getElementById('form-product-id').value = product.id;
+      document.getElementById('form-name').value = product.name || '';
+      document.getElementById('form-barcode').value = product.barcode || '';
+      document.getElementById('form-brand').value = product.brand || '';
+      document.getElementById('form-category').value = product.category || 'Dispensa';
+      document.getElementById('form-expiry').value = product.expiry || '';
+      document.getElementById('form-notes').value = product.notes || '';
+      
+      document.getElementById('form-title').innerHTML = `<i data-lucide="edit" class="w-5 h-5 text-brand-500"></i> Modifica Prodotto`;
+      lucide.createIcons();
+
+      switchView('add');
     }
 
     function saveProduct() {
+      const productId = document.getElementById('form-product-id').value;
       const name = document.getElementById('form-name').value.trim();
       const barcode = document.getElementById('form-barcode').value.trim();
       const brand = document.getElementById('form-brand').value.trim();
@@ -287,17 +312,35 @@
         return;
       }
 
-      const newProduct = {
-        id: 'p_' + Date.now(),
-        name: name,
-        barcode: barcode,
-        brand: brand,
-        category: category,
-        expiry: expiry,
-        notes: notes
-      };
-
-      products.push(newProduct);
+      if (productId) {
+        // MODIFICA: Aggiorna il prodotto esistente
+        const index = products.findIndex(p => p.id === productId);
+        if (index !== -1) {
+          products[index] = {
+            ...products[index],
+            name: name,
+            barcode: barcode,
+            brand: brand,
+            category: category,
+            expiry: expiry,
+            notes: notes
+          };
+          showToast("Prodotto aggiornato!");
+        }
+      } else {
+        // NUOVO INSERIMENTO: Crea un nuovo prodotto
+        const newProduct = {
+          id: 'p_' + Date.now(),
+          name: name,
+          barcode: barcode,
+          brand: brand,
+          category: category,
+          expiry: expiry,
+          notes: notes
+        };
+        products.push(newProduct);
+        showToast("Prodotto salvato!");
+      }
       
       try {
         localStorage.setItem('scanean_products', JSON.stringify(products));
@@ -307,7 +350,6 @@
       }
       
       resetForm();
-      showToast("Prodotto salvato!");
       updateDashboardStats();
       switchView('dashboard');
       renderProducts();
@@ -327,7 +369,9 @@
         emptyState.classList.add('hidden');
         filtered.forEach(p => {
           const div = document.createElement('div');
-          div.className = 'bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-3';
+          // Aggiunto cursor-pointer e onclick per riaprire i dettagli cliccando sulla scheda
+          div.className = 'bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-3 cursor-pointer active:bg-slate-50 transition-colors';
+          div.setAttribute('onclick', `editProduct('${p.id}')`);
           
           div.innerHTML = `
             <div class="flex items-center gap-3 min-w-0 flex-1">
@@ -341,7 +385,7 @@
                 ${p.notes ? `<p class="text-[10px] text-slate-400 italic truncate">Note: ${p.notes}</p>` : ''}
               </div>
             </div>
-            <div class="flex gap-1.5 shrink-0">
+            <div class="flex gap-1.5 shrink-0" onclick="event.stopPropagation();">
               <button onclick="consumeProduct('${p.id}')" class="p-2 bg-brand-50 text-brand-600 rounded-lg"><i data-lucide="check" class="w-4 h-4"></i></button>
               <button onclick="throwProduct('${p.id}')" class="p-2 bg-red-50 text-red-600 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
             </div>
