@@ -78,7 +78,6 @@
 
   <main class="flex-1 overflow-y-auto pb-28 px-4 pt-4 no-scrollbar">
     
-    <!-- DASHBOARD DI DISPENSA -->
     <section id="view-dashboard" class="space-y-4">
       <div class="relative">
         <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
@@ -114,7 +113,6 @@
       </div>
     </section>
 
-    <!-- SCHERMATA SCANNER -->
     <section id="view-scan" class="hidden space-y-4">
       <div class="bg-white rounded-2xl overflow-hidden relative border border-slate-200 shadow-sm flex flex-col items-center justify-center min-h-[240px]">
         <div id="scanner-reader" class="w-full aspect-[4/3] bg-black"></div>
@@ -131,7 +129,6 @@
       </div>
     </section>
 
-    <!-- SCHERMATA DETTAGLIO / INSERIMENTO -->
     <section id="view-add" class="hidden space-y-4">
       <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
         <div class="flex justify-between items-center">
@@ -142,32 +139,7 @@
         
         <div class="space-y-1.5">
           <label class="text-xs font-bold text-slate-500">Codice EAN / QR</label>
-          <div class="flex gap-2">
-            <input type="text" id="form-barcode" placeholder="EAN o QR" class="flex-1 bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-mono text-slate-800">
-            <button type="button" onclick="checkAndAutofillProduct()" class="px-4 bg-brand-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1 shadow-sm shrink-0">
-              <i data-lucide="search" class="w-3.5 h-3.5"></i> Cerca
-            </button>
-          </div>
-        </div>
-
-        <!-- SEZIONE FOTO PRODOTTO -->
-        <div class="space-y-2">
-          <label class="text-xs font-bold text-slate-500 block">Foto Prodotto</label>
-          <div class="flex flex-col items-center justify-center gap-4 p-4 bg-slate-50 border border-dashed border-slate-200 rounded-xl">
-            
-            <div id="image-preview-container" class="hidden relative w-48 h-48 rounded-xl overflow-hidden border border-slate-300 shadow-sm bg-white shrink-0">
-              <img id="image-preview" src="" class="w-full h-full object-cover">
-              <button type="button" onclick="removeSelectedImage()" class="absolute top-2 right-2 bg-red-600 text-white p-1.5 rounded-full shadow-md hover:bg-red-700 transition z-20">
-                <i data-lucide="x" class="w-4 h-4"></i>
-              </button>
-            </div>
-
-            <label class="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 hover:bg-slate-100 rounded-xl text-xs font-semibold text-slate-700 cursor-pointer transition shadow-sm">
-              <i data-lucide="camera" class="w-4 h-4 text-brand-500"></i>
-              <span id="camera-btn-text">Scatta Foto</span>
-              <input type="file" id="form-image" accept="image/*" capture="environment" class="hidden" onchange="handleImageUpload(event)">
-            </label>
-          </div>
+          <input type="text" id="form-barcode" placeholder="EAN o QR" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-mono text-slate-800">
         </div>
 
         <div class="grid grid-cols-2 gap-3">
@@ -211,7 +183,6 @@
       </div>
     </section>
 
-    <!-- REPORT / IMPOSTAZIONI -->
     <section id="view-stats" class="hidden space-y-4">
       <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
         <h2 class="text-md font-bold text-slate-900 flex items-center gap-2">
@@ -255,23 +226,16 @@
 
   <script>
     let products = JSON.parse(localStorage.getItem('scanean_products')) || [];
-    let globalCatalog = JSON.parse(localStorage.getItem('scanean_catalog')) || {};
-    
     let consumedCount = parseInt(localStorage.getItem('scanean_consumed')) || 0;
     let thrownCount = parseInt(localStorage.getItem('scanean_thrown')) || 0;
     let activeCategory = 'all';
     let html5QrScanner = null;
-    let currentProductImageBase64 = "";
 
     lucide.createIcons();
 
     window.addEventListener('DOMContentLoaded', () => {
       renderProducts();
       updateDashboardStats();
-      
-      document.getElementById('form-barcode').addEventListener('input', () => {
-        checkAndAutofillProduct();
-      });
     });
 
     function switchView(viewId) {
@@ -302,92 +266,12 @@
       }
     }
 
-    // COMPRESSIONE AUTOMATICA DELLA FOTO PER EVITARE BLOCCHI DI MEMORIA
-    function handleImageUpload(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const btnText = document.getElementById('camera-btn-text');
-      if (btnText) btnText.textContent = "Compressione...";
-
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const img = new Image();
-        img.onload = function() {
-          const canvas = document.createElement('canvas');
-          // Ridimensiona l'immagine a max 300px per ottimizzare la memoria
-          const max_size = 300;
-          let width = img.width;
-          let height = img.height;
-
-          if (width > height) {
-            if (width > max_size) { height *= max_size / width; width = max_size; }
-          } else {
-            if (height > max_size) { width *= max_size / height; height = max_size; }
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-
-          // Comprime l'immagine portando la qualità al 60% (.jpeg è incredibilmente leggero)
-          currentProductImageBase64 = canvas.toDataURL('image/jpeg', 0.6);
-          displayImagePreview(currentProductImageBase64);
-          if (btnText) btnText.textContent = "Cambia Foto";
-        };
-        img.src = e.target.result;
-      };
-      reader.readAsDataURL(file);
-    }
-
-    function displayImagePreview(base64Data) {
-      const container = document.getElementById('image-preview-container');
-      const img = document.getElementById('image-preview');
-      if (container && img) {
-        img.src = base64Data;
-        container.classList.remove('hidden');
-      }
-    }
-
-    function removeSelectedImage() {
-      currentProductImageBase64 = "";
-      const container = document.getElementById('image-preview-container');
-      const img = document.getElementById('image-preview');
-      if (container && img) { img.src = ""; container.classList.add('hidden'); }
-      const fileInput = document.getElementById('form-image');
-      if (fileInput) fileInput.value = "";
-      const btnText = document.getElementById('camera-btn-text');
-      if (btnText) btnText.textContent = "Scatta Foto";
-    }
-
     function resetForm() {
       document.getElementById('form-name').value = '';
       document.getElementById('form-barcode').value = '';
       document.getElementById('form-brand').value = '';
       document.getElementById('form-expiry').value = '';
       document.getElementById('form-notes').value = '';
-      currentProductImageBase64 = "";
-      removeSelectedImage();
-    }
-
-    function checkAndAutofillProduct() {
-      const barcode = document.getElementById('form-barcode').value.trim();
-      if (!barcode) return;
-
-      if (globalCatalog[barcode]) {
-        const saved = globalCatalog[barcode];
-        document.getElementById('form-name').value = saved.name || "";
-        document.getElementById('form-brand').value = saved.brand || "";
-        
-        if (saved.image) {
-          currentProductImageBase64 = saved.image;
-          displayImagePreview(saved.image);
-          showToast("Foto recuperata automaticamente!");
-        } else {
-          removeSelectedImage();
-        }
-      }
     }
 
     function saveProduct() {
@@ -403,25 +287,6 @@
         return;
       }
 
-      let imageToSave = currentProductImageBase64;
-      
-      if (!imageToSave && barcode && globalCatalog[barcode] && globalCatalog[barcode].image) {
-        imageToSave = globalCatalog[barcode].image;
-      }
-
-      if (barcode) {
-        globalCatalog[barcode] = {
-          name: name,
-          brand: brand,
-          image: imageToSave
-        };
-        try {
-          localStorage.setItem('scanean_catalog', JSON.stringify(globalCatalog));
-        } catch(e) {
-          console.log("Errore catalogo:", e);
-        }
-      }
-
       const newProduct = {
         id: 'p_' + Date.now(),
         name: name,
@@ -429,8 +294,7 @@
         brand: brand,
         category: category,
         expiry: expiry,
-        notes: notes,
-        image: imageToSave
+        notes: notes
       };
 
       products.push(newProduct);
@@ -465,14 +329,11 @@
           const div = document.createElement('div');
           div.className = 'bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-3';
           
-          const finalImg = p.image;
-          const imageHtml = finalImg 
-            ? `<div class="w-10 h-10 rounded-lg overflow-hidden border border-slate-100 shrink-0"><img src="${finalImg}" class="w-full h-full object-cover"></div>`
-            : `<div class="w-10 h-10 bg-slate-50 border border-slate-100 rounded-lg flex items-center justify-center text-slate-300 shrink-0"><i data-lucide="package" class="w-5 h-5"></i></div>`;
-
           div.innerHTML = `
             <div class="flex items-center gap-3 min-w-0 flex-1">
-              ${imageHtml}
+              <div class="w-10 h-10 bg-slate-50 border border-slate-100 rounded-lg flex items-center justify-center text-slate-300 shrink-0">
+                <i data-lucide="package" class="w-5 h-5 text-brand-500"></i>
+              </div>
               <div class="min-w-0 flex-1">
                 <span class="text-xs font-bold text-slate-900 block truncate">${p.name}</span>
                 <p class="text-[11px] text-slate-500 truncate">${p.brand || 'Nessuna marca'} &bull; ${p.category}</p>
@@ -532,8 +393,8 @@
     }
 
     function clearDatabase() {
-      if (confirm("Vuoi azzerare la dispensa e tutto il catalogo foto storico?")) {
-        products = []; globalCatalog = {}; consumedCount = 0; thrownCount = 0;
+      if (confirm("Vuoi azzerare completamente la dispensa?")) {
+        products = []; consumedCount = 0; thrownCount = 0;
         localStorage.clear();
         updateDashboardStats(); renderProducts();
         switchView('dashboard');
@@ -547,7 +408,6 @@
         resetForm();
         document.getElementById('form-barcode').value = decodedText;
         switchView('add');
-        checkAndAutofillProduct();
       }, () => {});
     }
 
