@@ -70,8 +70,8 @@
     
     <div class="flex gap-2">
       <div class="text-center px-2 py-0.5 bg-brand-50 border border-brand-100 rounded-md">
-        <div id="stat-expired" class="text-xs font-bold text-brand-600">0</div>
-        <div class="text-[8px] uppercase text-brand-500 font-bold">In Dispensa</div>
+        <div id="stat-expired" class="text-xs font-bold text-red-600">0</div>
+        <div class="text-[8px] uppercase text-red-500 font-bold">In Dispensa</div>
       </div>
     </div>
   </header>
@@ -328,6 +328,7 @@
       }
     }
 
+    // Pulisce l'anteprima visiva della foto
     function removeSelectedImage() {
       currentProductImageBase64 = "";
       const container = document.getElementById('image-preview-container');
@@ -347,6 +348,7 @@
       removeSelectedImage();
     }
 
+    // Funzione di riempimento automatico migliorata e agganciata correttamente
     function checkAndAutofillProduct() {
       const barcode = document.getElementById('form-barcode').value.trim();
       if (!barcode) {
@@ -361,13 +363,14 @@
         document.getElementById('form-category').value = saved.category || "Dispensa";
         
         if (saved.image) {
-          currentProductImageBase64 = saved.image;
-          displayImagePreview(saved.image);
+          currentProductImageBase64 = saved.image; // Seleziona e aggancia la foto in automatico
+          displayImagePreview(saved.image);       // La mostra nel riquadro gigante
         } else {
           removeSelectedImage();
         }
         showToast("Prodotto e foto abbinati!");
       } else {
+        // Pulisce se l'EAN non ha storico per evitare sovrascritture errate
         document.getElementById('form-name').value = "";
         document.getElementById('form-brand').value = "";
         removeSelectedImage();
@@ -394,6 +397,7 @@
         return;
       }
 
+      // Memorizza o aggiorna le informazioni legate al codice EAN nel catalogo permanente
       if (barcode) {
         globalCatalog[barcode] = {
           name: name,
@@ -485,7 +489,8 @@
     }
 
     function updateDashboardStats() {
-      document.getElementById('stat-expired').textContent = products.length;
+      const el = document.getElementById('stat-expired');
+      if (el) el.textContent = products.length;
     }
 
     function renderStats() {
