@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="it" class="h-full bg-slate-50 text-slate-800">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Scan Ean - Expiry & Code Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdfb',
+              100: '#ccfbf1',
+              500: '#32bfa3', 
+              600: '#23a088',
+              700: '#115e50',
+              900: '#0d4a3e',
+            },
+            accent: {
+              50: '#fff7f5',
+              100: '#ffeedb',
+              500: '#ff7c54', 
+              600: '#e5643d',
+              800: '#9a3412',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      overscroll-behavior-y: contain;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans select-none overflow-hidden bg-slate-50">
+
+  <div id="ad-banner" class="bg-gradient-to-r from-accent-50 via-white to-accent-50 py-1.5 px-4 text-center text-xs border-b border-accent-100 flex items-center justify-between z-50">
+    <span class="text-accent-800 font-medium truncate">Sponsor: Risparmia il 20% sulla spesa con il codice SCANEAN20!</span>
+    <button onclick="openPaypalModal()" class="bg-accent-500 text-white text-[10px] font-bold px-2 py-1 rounded hover:bg-accent-600 transition shadow-sm shrink-0">
+      Rimuovi Ads (1.99€)
+    </button>
+  </div>
+
+  <header class="bg-white sticky top-0 z-40 px-4 py-3 flex items-center justify-between border-b border-slate-100 shadow-sm">
+    <div class="flex items-center gap-2">
+      <div class="p-1.5 bg-brand-100 text-brand-600 rounded-lg">
+        <i data-lucide="scan" class="w-6 h-6"></i>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold tracking-tight text-slate-900 flex items-center gap-1.5">
+          Scan Ean <span id="premium-badge" class="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full font-medium border border-slate-200">Free</span>
+        </h1>
+        <p class="text-[10px] text-slate-500 font-medium">Scansione rapida e gestione scadenze</p>
+      </div>
+    </div>
+    
+    <div class="flex gap-2">
+      <div class="text-center px-2 py-0.5 bg-red-50 border border-red-100 rounded-md">
+        <div id="stat-expired" class="text-xs font-bold text-red-600">0</div>
+        <div class="text-[8px] uppercase text-red-500 font-bold">Scaduti</div>
+      </div>
+      <div class="text-center px-2 py-0.5 bg-accent-50 border border-accent-100 rounded-md">
+        <div id="stat-warning" class="text-xs font-bold text-accent-600">0</div>
+        <div class="text-[8px] uppercase text-accent-500 font-bold">In Scadenza</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 overflow-y-auto pb-28 px-4 pt-4 no-scrollbar">
+    
+    <section id="view-dashboard" class="space-y-4">
+      <div class="relative">
+        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+        <input type="text" id="search-input" placeholder="Cerca per nome, marca o codice..." class="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 text-slate-800 placeholder-slate-400 shadow-sm">
+      </div>
+
+      <div class="flex gap-2 overflow-x-auto no-scrollbar py-1">
+        <button onclick="filterCategory(event, 'all')" class="category-btn active px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all bg-brand-500 text-white shadow-sm">
+          Tutti
+        </button>
+        <button onclick="filterCategory(event, 'Frigorifero')" class="category-btn px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all bg-white text-slate-600 border border-slate-200 hover:border-slate-300 shadow-sm">
+          ❄️ Frigorifero
+        </button>
+        <button onclick="filterCategory(event, 'Dispensa')" class="category-btn px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all bg-white text-slate-600 border border-slate-200 hover:border-slate-300 shadow-sm">
+          🌾 Dispensa
+        </button>
+        <button onclick="filterCategory(event, 'Congelatore')" class="category-btn px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all bg-white text-slate-600 border border-slate-200 hover:border-slate-300 shadow-sm">
+          🧊 Congelatore
+        </button>
+        <button onclick="filterCategory(event, 'Casa e Farmaci')" class="category-btn px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all bg-white text-slate-600 border border-slate-200 hover:border-slate-300 shadow-sm">
+          💊 Casa e Farmaci
+        </button>
+      </div>
+
+      <div id="products-container" class="space-y-3"></div>
+      
+      <div id="empty-state" class="hidden flex flex-col items-center justify-center py-16 text-center">
+        <div class="p-4 bg-white rounded-full text-slate-300 mb-3 border border-slate-100 shadow-sm">
+          <i data-lucide="package-open" class="w-12 h-12 text-brand-500"></i>
+        </div>
+        <p class="text-sm font-semibold text-slate-700">Nessun prodotto registrato</p>
+        <p class="text-xs text-slate-500 mt-1 max-w-[200px]">Usa il lettore per scansionare qualsiasi codice EAN o QR Code!</p>
+      </div>
+    </section>
+
+    <section id="view-scan" class="hidden space-y-4">
+      <div class="bg-white rounded-2xl overflow-hidden relative border border-slate-200 shadow-sm flex flex-col items-center justify-center min-h-[240px]">
+        <div id="scanner-security-alert" class="hidden p-6 text-center space-y-3 z-10 absolute inset-0 bg-white flex flex-col items-center justify-center">
+          <div class="p-3 bg-accent-50 rounded-full text-accent-500">
+            <i data-lucide="shield-alert" class="w-8 h-8"></i>
+          </div>
+          <p class="text-xs font-bold text-slate-800">La fotocamera richiede HTTPS (Connessione Sicura)</p>
+          <p class="text-[10px] text-slate-500 max-w-[240px] leading-relaxed">
+            I browser mobili bloccano la fotocamera sui file locali in modalità offline (<code class="bg-slate-100 px-1 py-0.5 rounded text-red-500">file://</code>). 
+            Carica l'app online su siti gratuiti (es. <em>tiiny.host</em> o <em>GitHub Pages</em>) per testarla su telefono, oppure usa l'inserimento manuale.
+          </p>
+          <button onclick="switchView('add')" class="px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-xs font-semibold shadow-sm transition">
+            Vai a Inserimento Manuale
+          </button>
+        </div>
+
+        <div id="scanner-reader" class="w-full aspect-[4/3] bg-black"></div>
+        <div class="absolute inset-0 border-2 border-brand-500/50 pointer-events-none rounded-2xl"></div>
+        
+        <div id="scanner-overlay-box" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-56 h-36 border-2 border-dashed border-accent-500 rounded flex items-center justify-center pointer-events-none">
+          <span class="text-[10px] bg-slate-900/90 text-white px-2 py-0.5 rounded font-mono font-bold">ALLINEA EAN / QR</span>
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <button onclick="stopScanning(); switchView('add')" class="flex-1 py-3 bg-white border border-slate-200 hover:border-slate-300 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 text-slate-700 shadow-sm">
+          <i data-lucide="keyboard" class="w-4 h-4 text-brand-500"></i> Inserisci manuale
+        </button>
+        <button onclick="toggleFlash()" id="flash-btn" class="px-4 py-3 bg-white border border-slate-200 rounded-xl flex items-center justify-center shadow-sm">
+          <i data-lucide="zap" class="w-4 h-4 text-slate-400"></i>
+        </button>
+      </div>
+
+      <div class="p-4 bg-brand-50 border border-brand-100 rounded-xl text-xs text-brand-700 space-y-1.5">
+        <p class="font-bold flex items-center gap-1"><i data-lucide="zap" class="w-3.5 h-3.5 text-brand-500"></i> Lettore Integrato</p>
+        <p class="text-slate-600">L'app decodifica codici <strong>EAN-13, EAN-8, QR Code, Code-128</strong>.</p>
+        <p class="text-slate-500">Codice demo da provare: <code class="bg-brand-100 px-1 py-0.5 rounded text-brand-700 font-bold">8002270014901</code> (Latte Granarolo).</p>
+      </div>
+    </section>
+
+    <section id="view-add" class="hidden space-y-4">
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <div class="flex justify-between items-center">
+          <h2 class="text-md font-bold text-slate-900 flex items-center gap-2">
+            <i data-lucide="plus-circle" class="w-5 h-5 text-brand-500"></i> Aggiungi Prodotto
+          </h2>
+          <span class="text-[10px] text-slate-400 font-mono">Scheda Prodotto</span>
+        </div>
+        
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-slate-500">Codice EAN / QR</label>
+          <div class="flex gap-2">
+            <input type="text" id="form-barcode" placeholder="EAN (es. 8002270014901)" class="flex-1 bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 text-slate-800 font-mono">
+            <button onclick="fetchProductInfo()" class="px-4 bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-xs font-semibold flex items-center gap-1 shadow-sm shrink-0">
+              <i data-lucide="search" class="w-3.5 h-3.5"></i> Cerca
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div class="space-y-1.5 col-span-2">
+            <label class="text-xs font-bold text-slate-500">Nome Prodotto *</label>
+            <input type="text" id="form-name" placeholder="Inserisci il nome del prodotto" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 text-slate-800">
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-slate-500">Marca</label>
+            <input type="text" id="form-brand" placeholder="Es. Barilla" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 text-slate-800">
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-slate-500">Posizione</label>
+            <select id="form-category" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-brand-500 text-slate-800">
+              <option value="Frigorifero">Frigorifero</option>
+              <option value="Dispensa" selected>Dispensa</option>
+              <option value="Congelatore">Congelatore</option>
+              <option value="Casa e Farmaci">Casa e Farmaci</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-slate-500">Data di Scadenza *</label>
+          <input type="date" id="form-expiry" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 text-slate-800">
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-slate-500">Note Personalizzate</label>
+          <textarea id="form-notes" rows="2" placeholder="Note aggiuntive..." class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-brand-500 text-slate-800 resize-none"></textarea>
+        </div>
+
+        <div class="flex gap-3 pt-2">
+          <button onclick="switchView('dashboard')" class="flex-1 py-3 bg-slate-100 border border-slate-200 hover:bg-slate-200 rounded-xl text-xs font-semibold text-slate-700">
+            Annulla
+          </button>
+          <button onclick="saveProduct()" class="flex-1 py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1 shadow-sm">
+            <i data-lucide="check" class="w-4 h-4"></i> Salva
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-stats" class="hidden space-y-4">
+      <div id="premium-promo-card" class="p-5 rounded-2xl border border-accent-200 bg-accent-50/80 space-y-3 shadow-sm">
+        <h3 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+          <i data-lucide="sparkles" class="w-4 h-4 text-accent-500"></i> Rimuovi Pubblicità per Sempre
+        </h3>
+        <p class="text-xs text-slate-600">Con un costo fisso di soli <strong class="text-accent-600">1.99€</strong> una tantum, sblocca la versione completa.</p>
+        <button onclick="openPaypalModal()" class="w-full py-2.5 bg-accent-500 hover:bg-accent-600 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-1 shadow-sm">
+          Sblocca Premium &bull; 1.99€
+        </button>
+      </div>
+
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <h2 class="text-md font-bold text-slate-900 flex items-center gap-2">
+          <i data-lucide="bar-chart-3" class="w-5 h-5 text-brand-500"></i> Analisi Sprechi
+        </h2>
+        
+        <div class="grid grid-cols-2 gap-3">
+          <div class="p-3 bg-slate-50 border border-slate-100 rounded-xl text-center">
+            <div id="stat-consumed" class="text-2xl font-bold text-brand-500">0</div>
+            <p class="text-[10px] text-slate-500 mt-0.5">Consumati</p>
+          </div>
+          <div class="p-3 bg-slate-50 border border-slate-100 rounded-xl text-center">
+            <div id="stat-thrown" class="text-2xl font-bold text-red-500">0</div>
+            <p class="text-[10px] text-slate-500 mt-0.5">Buttati</p>
+          </div>
+        </div>
+
+        <div class="p-4 bg-slate-50 border border-slate-100 rounded-xl space-y-2">
+          <p class="text-xs font-bold text-slate-700">Tasso di Risparmio</p>
+          <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden border border-slate-100">
+            <div id="waste-ratio-bar" class="bg-brand-500 h-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+          <p id="waste-ratio-text" class="text-[10px] text-slate-500 text-right font-medium">0% Salvato</p>
+        </div>
+
+        <div class="space-y-2">
+          <h3 class="text-xs font-bold text-slate-600">Cronologia Operazioni</h3>
+          <div id="history-container" class="space-y-2 max-h-[160px] overflow-y-auto no-scrollbar"></div>
+        </div>
+
+        <button onclick="clearDatabase()" class="w-full py-3 bg-red-50 border border-red-100 text-red-600 hover:bg-red-100/50 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5">
+          <i data-lucide="trash-2" class="w-4 h-4"></i> Svuota Archivio Completo
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <nav class="bg-white fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 flex items-center justify-around py-3 px-6 shadow-[0_-2px_10px_rgba(0,0,0,0.03)]">
+    <button onclick="switchView('dashboard')" id="nav-dashboard" class="flex flex-col items-center gap-1 text-brand-500">
+      <i data-lucide="layout-grid" class="w-5 h-5"></i>
+      <span class="text-[9px] font-bold">Dispensa</span>
+    </button>
+    
+    <button onclick="startScanning(); switchView('scan')" id="nav-scan" class="flex flex-col items-center justify-center w-14 h-14 bg-brand-500 text-white rounded-full -translate-y-4 shadow-md shadow-brand-500/30 border-4 border-slate-50 transition-transform active:scale-95">
+      <i data-lucide="camera" class="w-6 h-6"></i>
+    </button>
+
+    <button onclick="switchView('stats')" id="nav-stats" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+      <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+      <span class="text-[9px] font-bold">Report</span>
+    </button>
+  </nav>
+
+  <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 py-2.5 px-4 bg-slate-900/90 text-white rounded-full text-xs font-semibold shadow-xl opacity-0 transition-opacity duration-300 pointer-events-none flex items-center gap-2">
+    <span id="toast-text">Messaggio</span>
+  </div>
+
+  <div id="paypal-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 p-4">
+    <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4 border border-slate-200">
+      <div class="flex justify-between items-center">
+        <h3 class="text-md font-bold text-slate-900 flex items-center gap-1.5">
+          <i data-lucide="shield-check" class="text-brand-500 w-5 h-5"></i> Acquista Premium
+        </h3>
+        <button onclick="closePaypalModal()" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="text-center py-2">
+        <p class="text-xs text-slate-500 font-medium">Scan Ean Premium Upgrade</p>
+        <p class="text-3xl font-black text-slate-900 mt-1">1,99 €</p>
+        <p class="text-[10px] text-slate-400 mt-1">Acquisto unico, rimuove la pubblicità per sempre</p>
+      </div>
+      <button onclick="startPaypalFlow()" class="w-full bg-[#ffc439] hover:bg-[#f2ba36] text-[#003087] font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition shadow-sm hover:scale-[1.01]">
+        <span class="italic font-black text-lg">Pay<span class="text-[#0079c1]">Pal</span></span>
+      </button>
+      <div class="text-[9px] text-slate-400 text-center flex items-center justify-center gap-1">
+        <i data-lucide="lock" class="w-3 h-3 text-slate-400"></i> Connessione crittografata sicura SSL
+      </div>
+    </div>
+  </div>
+
+  <div id="paypal-flow" class="fixed inset-0 z-[60] hidden flex items-center justify-center bg-black/80 p-4">
+    <div class="bg-white rounded-2xl p-6 max-w-xs w-full shadow-2xl text-center space-y-6">
+      <div id="paypal-step-loading" class="space-y-4 py-4">
+        <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-[#0070ba] border-t-transparent"></div>
+        <p class="text-sm font-bold text-slate-800">Connessione a PayPal...</p>
+      </div>
+      
+      <div id="paypal-step-confirm" class="hidden space-y-4 py-2">
+        <div class="flex justify-center text-[#003087]">
+          <span class="italic font-black text-2xl">Pay<span class="text-[#0079c1]">Pal</span></span>
+        </div>
+        <div class="border-t border-b border-slate-100 py-3 text-left space-y-1.5">
+          <div class="text-[11px] text-slate-500 flex justify-between"><span>Account:</span> <span class="font-bold text-slate-800">cliente@scanean.it</span></div>
+          <div class="text-[11px] text-slate-500 flex justify-between"><span>Prezzo:</span> <span class="font-bold text-slate-800">1,99 €</span></div>
+        </div>
+        <button onclick="confirmPaypalPayment()" class="w-full bg-[#0070ba] hover:bg-[#005ea6] text-white font-bold py-2.5 rounded-xl transition text-xs shadow">
+          Paga Ora (1.99€)
+        </button>
+        <button onclick="cancelPaypalFlow()" class="w-full text-slate-400 hover:text-slate-600 text-xs font-semibold pt-1">
+          Annulla
+        </button>
+      </div>
+      
+      <div id="paypal-step-success" class="hidden space-y-4 py-4">
+        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-brand-100 text-brand-600 border border-brand-200">
+          <i data-lucide="check" class="w-6 h-6"></i>
+        </div>
+        <p class="text-sm font-bold text-slate-800">Pagamento Completato!</p>
+        <button onclick="completePaypalFlow()" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-2 rounded-xl transition text-xs shadow-sm">
+          Ritorna alla Dispensa
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let products = JSON.parse(localStorage.getItem('scanean_products')) || [];
+    let isPremium = JSON.parse(localStorage.getItem('scanean_premium')) || false;
+    let activeCategory = 'all';
+    let html5QrScanner = null;
+    let flashEnabled = false;
+
+    lucide.createIcons();
+
+    window.addEventListener('DOMContentLoaded', () => {
+      applyPremiumState();
+      renderProducts();
+      updateDashboardStats();
+    });
+
+    function applyPremiumState() {
+      const adBanner = document.getElementById('ad-banner');
+      const premiumBadge = document.getElementById('premium-badge');
+      const premiumPromoCard = document.getElementById('premium-promo-card');
+
+      if (isPremium) {
+        if (adBanner) adBanner.classList.add('hidden');
+        if (premiumBadge) {
+          premiumBadge.textContent = "Premium";
+          premiumBadge.className = "text-[9px] bg-brand-100 text-brand-600 px-1.5 py-0.5 rounded-full font-bold border border-brand-200";
+        }
+        if (premiumPromoCard) premiumPromoCard.classList.add('hidden');
+      } else {
+        if (adBanner) adBanner.classList.remove('hidden');
+        if (premiumBadge) {
+          premiumBadge.textContent = "Free";
+          premiumBadge.className = "text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full font-medium border border-slate-200";
+        }
+        if (premiumPromoCard) premiumPromoCard.classList.remove('hidden');
+      }
+    }
+
+    function switchView(viewId) {
+      const views = ['dashboard', 'scan', 'add', 'stats'];
+      views.forEach(v => {
+        const el = document.getElementById(`view-${v}`);
+        if (el) el.classList.add('hidden');
+        
+        const navEl = document.getElementById(`nav-${v}`);
+        if (navEl) {
+          if (v === 'scan') return; 
+          navEl.classList.remove('text-brand-500', 'text-slate-400');
+          navEl.classList.add('text-slate-400');
+        }
+      });
+
+      const targetView = document.getElementById(`view-${viewId}`);
+      if (targetView) targetView.classList.remove('hidden');
+      
+      const activeNav = document.getElementById(`nav-${viewId}`);
+      if (activeNav && viewId !== 'scan') {
+        activeNav.classList.remove('text-slate-400');
+        activeNav.classList.add('text-brand-500');
+      }
+
+      if (viewId !== 'scan') {
+        stopScanning();
+      }
+    }
+
+    function openPaypalModal() {
+      document.getElementById('paypal-modal').classList.remove('hidden');
+    }
+
+    function closePaypalModal() {
+      document.getElementById('paypal-modal').classList.add('hidden');
+    }
+
+    function startPaypalFlow() {
+      closePaypalModal();
+      document.getElementById('paypal-flow').classList.remove('hidden');
+      document.getElementById('paypal-step-loading').classList.remove('hidden');
+      document.getElementById('paypal-step-confirm').classList.add('hidden');
+      document.getElementById('paypal-step-success').classList.add('hidden');
+      
+      setTimeout(() => {
+        document.getElementById('paypal-step-loading').classList.add('hidden');
+        document.getElementById('paypal-step-confirm').classList.remove('hidden');
+      }, 1500);
+    }
+
+    function confirmPaypalPayment() {
+      document.getElementById('paypal-step-confirm').classList.add('hidden');
+      document.getElementById('paypal-step-loading').classList.remove('hidden');
+      
+      setTimeout(() => {
+        document.getElementById('paypal-step-loading').classList.add('hidden');
+        document.getElementById('paypal-step-success').classList.remove('hidden');
+        isPremium = true;
+        localStorage.setItem('scanean_premium', JSON.stringify(true));
+        applyPremiumState();
+      }, 1500);
+    }
+
+    function cancelPaypalFlow() {
+      document.getElementById('paypal-flow').classList.add('hidden');
+    }
+
+    function completePaypalFlow() {
+      document.getElementById('paypal-flow').classList.add('hidden');
+      switchView('dashboard');
+      showToast("👑 Modalità Premium Attivata!");
+    }
+
+    function saveProduct() {
+      const name = document.getElementById('form-name').value.trim();
+      const barcode = document.getElementById('form-barcode').value.trim();
+      const brand = document.getElementById('form-brand').value.trim();
+      const category = document.getElementById('form-category').value;
+      const expiry = document.getElementById('form-expiry').value;
+      const notes = document.getElementById('form-notes').value.trim();
+
+      if (!name || !expiry) {
+        showToast("⚠️ Nome e Data di scadenza sono obbligatori!");
+        return;
+      }
+
+      const newProduct = {
+        id: Date.now().toString(),
+        name,
+        barcode,
+        brand,
+        category,
+        expiry,
+        notes,
+        status: 'active'
+      };
+
+      products.push(newProduct);
+      localStorage.setItem('scanean_products', JSON.stringify(products));
+      
+      document.getElementById('form-name').value = '';
+      document.getElementById('form-barcode').value = '';
+      document.getElementById('form-brand').value = '';
+      document.getElementById('form-expiry').value = '';
+      document.getElementById('form-notes').value = '';
+
+      renderProducts();
+      updateDashboardStats();
+      switchView('dashboard');
+      showToast("✅ Prodotto salvato con successo!");
+    }
+
+    function updateProductStatus(id, newStatus) {
+      products = products.map(p => p.id === id ? { ...p, status: newStatus } : p);
+      localStorage.setItem('scanean_products', JSON.stringify(products));
+      renderProducts();
+      updateDashboardStats();
+      showToast(newStatus === 'consumed' ? "😋 Prodotto Consumato!" : "🗑️ Prodotto cestinato.");
+    }
+
+    function renderProducts() {
+      const container = document.getElementById('products-container');
+      const emptyState = document.getElementById('empty-state');
+      const searchQuery = document.getElementById('search-input').value.toLowerCase();
+      
+      if (!container) return;
+      container.innerHTML = '';
+      
+      const activeProducts = products.filter(p => p.status === 'active' && 
+        (activeCategory === 'all' || p.category === activeCategory) &&
+        (p.name.toLowerCase().includes(searchQuery) || p.brand.toLowerCase().includes(searchQuery) || p.barcode.includes(searchQuery))
+      );
+
+      activeProducts.sort((a, b) => new Date(a.expiry) - new Date(b.expiry));
+
+      if (activeProducts.length === 0) {
+        if (emptyState) emptyState.classList.remove('hidden');
+        return;
+      }
+      if (emptyState) emptyState.classList.add('hidden');
+
+      const today = new Date();
+      today.setHours(0,0,0,0);
+
+      activeProducts.forEach(p => {
+        const expiryDate = new Date(p.expiry);
+        expiryDate.setHours(0,0,0,0);
+        const diffTime = expiryDate - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        let statusBadge = '';
+        let cardBorder = 'border-slate-200';
+        
+        if (diffDays < 0) {
+          statusBadge = '<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[10px] font-bold">Scaduto</span>';
+          cardBorder = 'border-red-300 bg-red-50/20';
+        } else if (diffDays <= 3) {
+          statusBadge = `<span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-[10px] font-bold">In scadenza (${diffDays}g)</span>`;
+          cardBorder = 'border-amber-300 bg-amber-50/20';
+        } else {
+          statusBadge = `<span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-medium">${diffDays} giorni rimasti</span>`;
+        }
+
+        const card = document.createElement('div');
+        card.className = `p-4 bg-white rounded-2xl border ${cardBorder} shadow-sm flex flex-col justify-between gap-3`;
+        card.innerHTML = `
+          <div class="flex justify-between items-start">
+            <div>
+              <h4 class="font-bold text-slate-900 text-sm">${p.name}</h4>
+              <p class="text-xs text-slate-500">${p.brand ? p.brand + ' &bull; ' : ''}${p.category}</p>
+              ${p.barcode ? `<p class="text-[10px] font-mono text-slate-400 mt-0.5">EAN: ${p.barcode}</p>` : ''}
+              ${p.notes ? `<p class="text-xs text-slate-600 bg-slate-50 p-1.5 rounded-lg mt-2 italic">"${p.notes}"</p>` : ''}
+            </div>
+            <div class="flex flex-col items-end gap-1.5">
+              ${statusBadge}
+              <span class="text-xs font-mono font-bold text-slate-700">${formatDate(p.expiry)}</span>
+            </div>
+          </div>
+          <div class="flex gap-2 border-t border-slate-100 pt-2">
+            <button onclick="updateProductStatus('${p.id}', 'consumed')" class="flex-1 py-1.5 bg-brand-50 hover:bg-brand-100 text-brand-600 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition">
+              <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Consumato
+            </button>
+            <button onclick="updateProductStatus('${p.id}', 'wasted')" class="flex-1 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition">
+              <i data-lucide="trash" class="w-3.5 h-3.5"></i> Buttato
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+      
+      lucide.createIcons();
+      renderHistory();
+    }
+
+    // LISTENER RICERCA DIGITATA
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+      searchInput.addEventListener('input', renderProducts);
+    }
+
+    function filterCategory(event, category) {
+      activeCategory = category;
+      document.querySelectorAll('.category-btn').forEach(btn => {
+        btn.classList.remove('bg-brand-500', 'text-white');
+        btn.classList.add('bg-white', 'text-slate-600', 'border', 'border-slate-200');
+      });
+      event.currentTarget.classList.remove('bg-white', 'text-slate-600', 'border', 'border-slate-200');
+      event.currentTarget.classList.add('bg-brand-500', 'text-white');
+      renderProducts();
+    }
+
+    function updateDashboardStats() {
+      const today = new Date();
+      today.setHours(0,0,0,0);
+
+      let expiredCount = 0;
+      let warningCount = 0;
+      let consumedCount = 0;
+      let thrownCount = 0;
+
+      products.forEach(p => {
+        if (p.status === 'active') {
+          const expiryDate = new Date(p.expiry);
+          expiryDate.setHours(0,0,0,0);
+          const diffDays = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+          
+          if (diffDays < 0) expiredCount++;
+          else if (diffDays <= 3) warningCount++;
+        } else if (p.status === 'consumed') {
+          consumedCount++;
+        } else if (p.status === 'wasted') {
+          thrownCount++;
+        }
+      });
+
+      const statExpired = document.getElementById('stat-expired');
+      const statWarning = document.getElementById('stat-warning');
+      const statConsumed = document.getElementById('stat-consumed');
+      const statThrown = document.getElementById('stat-thrown');
+
+      if (statExpired) statExpired.textContent = expiredCount;
+      if (statWarning) statWarning.textContent = warningCount;
+      if (statConsumed) statConsumed.textContent = consumedCount;
+      if (statThrown) statThrown.textContent = thrownCount;
+
+      const totalArchived = consumedCount + thrownCount;
+      const ratioBar = document.getElementById('waste-ratio-bar');
+      const ratioText = document.getElementById('waste-ratio-text');
+      
+      if (totalArchived === 0) {
+        if (ratioBar) ratioBar.style.width = '0%';
+        if (ratioText) ratioText.textContent = "Nessun dato storico";
+      } else {
+        const percentage = Math.round((consumedCount / totalArchived) * 100);
+        if (ratioBar) ratioBar.style.width = `${percentage}%`;
+        if (ratioText) ratioText.textContent = `${percentage}% Salvato`;
+      }
+    }
+
+    function renderHistory() {
+      const historyContainer = document.getElementById('history-container');
+      if (!historyContainer) return;
+      
+      historyContainer.innerHTML = '';
+      const historicalProducts = products.filter(p => p.status !== 'active');
+
+      if (historicalProducts.length === 0) {
+        historyContainer.innerHTML = '<p class="text-[11px] text-slate-400 text-center py-2">Nessun prodotto in cronologia.</p>';
+        return;
+      }
+
+      historicalProducts.slice().reverse().forEach(p => {
+        const item = document.createElement('div');
+        item.className = "flex justify-between items-center bg-slate-50 p-2 rounded-lg text-xs border border-slate-100";
+        item.innerHTML = `
+          <div>
+            <span class="font-semibold text-slate-800">${p.name}</span>
+            <span class="text-[10px] text-slate-400 block">${p.category}</span>
+          </div>
+          ${p.status === 'consumed' ? 
+            '<span class="text-[10px] font-bold text-brand-600 bg-brand-50 px-2 py-0.5 rounded">Consumato</span>' : 
+            '<span class="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded">Buttato</span>'}
+        `;
+        historyContainer.appendChild(item);
+      });
+    }
+
+    function clearDatabase() {
+      if (confirm("Sei sicuro di voler resettare tutta la tua dispensa e la cronologia?")) {
+        products = [];
+        localStorage.setItem('scanean_products', JSON.stringify(products));
+        renderProducts();
+        updateDashboardStats();
+        showToast("🗑️ Dispensa svuotata.");
+      }
+    }
+
+    function startScanning() {
+      const securityAlert = document.getElementById('scanner-security-alert');
+      
+      if (location.protocol === 'file:' || (location.hostname !== 'localhost' && location.protocol !== 'https:')) {
+        if (securityAlert) securityAlert.classList.remove('hidden');
+        return;
+      }
+      if (securityAlert) securityAlert.classList.add('hidden');
+
+      if (!html5QrScanner) {
+        html5QrScanner = new Html5Qrcode("scanner-reader");
+      }
+
+      const config = { fps: 15, qrbox: { width: 250, height: 160 } };
+      
+      html5QrScanner.start(
+        { facingMode: "environment" }, 
+        config,
+        (decodedText) => {
+          stopScanning();
+          document.getElementById('form-barcode').value = decodedText;
+          switchView('add');
+          showToast(`🎯 Codice: ${decodedText}`);
+          fetchProductInfo(decodedText);
+        },
+        (errorMessage) => {}
+      ).catch(err => {
+        console.error(err);
+        showToast("❌ Impossibile accedere alla fotocamera.");
+      });
+    }
+
+    function stopScanning() {
+      if (html5QrScanner && html5QrScanner.isScanning) {
+        html5QrScanner.stop().catch(err => console.error(err));
+      }
+    }
+
+    function toggleFlash() {
+      flashEnabled = !flashEnabled;
+      const flashBtn = document.getElementById('flash-btn');
+      if (flashEnabled) {
+        if (flashBtn) {
+          flashBtn.classList.remove('bg-white');
+          flashBtn.classList.add('bg-amber-100', 'border-amber-300');
+        }
+        showToast("💡 Tentativo attivazione torcia");
+      } else {
+        if (flashBtn) {
+          flashBtn.classList.add('bg-white');
+          flashBtn.classList.remove('bg-amber-100', 'border-amber-300');
+        }
+      }
+    }
+
+    function fetchProductInfo(scannedCode = null) {
+      const code = scannedCode || document.getElementById('form-barcode').value.trim();
+      if (!code) {
+        showToast("⚠️ Inserisci un codice da cercare!");
+        return;
+      }
+
+      showToast("🔍 Ricerca prodotto...");
+      
+      fetch(`https://world.openfoodfacts.org/api/v2/product/${code}.json`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === 1 && data.product) {
+            document.getElementById('form-name').value = data.product.product_name || '';
+            document.getElementById('form-brand').value = data.product.brands || '';
+            showToast("📦 Prodotto trovato nel database globale!");
+          } else {
+            if (code === '8002270014901') {
+              document.getElementById('form-name').value = "Latte Parzialmente Scremato UHT";
+              document.getElementById('form-brand').value = "Granarolo";
+              showToast("📦 Dati demo caricati correttamente!");
+            } else {
+              showToast("❓ Codice sconosciuto. Inserisci i dettagli a mano.");
+            }
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          showToast("🌐 Inserisci i dettagli manualmente.");
+        });
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const toastText = document.getElementById('toast-text');
+      if (toastText) toastText.textContent = message;
+      if (toast) {
+        toast.classList.remove('opacity-0');
+        toast.classList.add('opacity-100');
+        setTimeout(() => {
+          toast.classList.remove('opacity-100');
+          toast.classList.add('opacity-0');
+        }, 3000);
+      }
+    }
+
+    function formatDate(dateString) {
+      if (!dateString) return '';
+      const parts = dateString.split('-');
+      if (parts.length !== 3) return dateString;
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+  </script>
+</body>
+</html>
