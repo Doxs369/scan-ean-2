@@ -1,98 +1,103 @@
 <!DOCTYPE html>
-<html lang="it" class="h-full bg-slate-50 text-slate-800">
+<html lang="it" class="h-full">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Scan Ean Pro</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script>
-    tailwind.config = { darkMode: 'class', theme: { extend: { colors: { brand: { 500: '#32bfa3' } } } } }
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: { colors: { brand: { 500: '#32bfa3' }, accent: { 500: '#ff7c54' } } } }
+    }
   </script>
 </head>
-<body class="h-full flex flex-col bg-slate-50 dark:bg-slate-900 dark:text-slate-100 transition-colors">
+<body class="h-full bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-colors">
 
-  <header class="bg-white dark:bg-slate-800 p-4 flex justify-between items-center border-b dark:border-slate-700">
-    <h1 class="text-lg font-bold">Scan Ean Pro</h1>
-    <button onclick="toggleDarkMode()" class="p-2 bg-slate-200 dark:bg-slate-700 rounded-lg">
-      <i data-lucide="moon" class="w-5 h-5"></i>
-    </button>
+  <header class="bg-white dark:bg-slate-800 p-4 flex justify-between items-center shadow-sm">
+    <h1 class="text-lg font-bold text-brand-500">Scan Ean Pro</h1>
+    <button onclick="toggleDarkMode()" class="p-2 bg-slate-100 dark:bg-slate-700 rounded-full"><i data-lucide="moon" class="w-5 h-5"></i></button>
   </header>
 
-  <main class="flex-1 overflow-y-auto p-4 space-y-4">
-    <div class="flex gap-2 pb-2">
-      <button onclick="renderProducts('all')" class="px-4 py-2 bg-brand-500 text-white rounded-full text-xs font-bold">Tutti</button>
-      <button onclick="renderProducts('urgent')" class="px-4 py-2 bg-red-500 text-white rounded-full text-xs font-bold">In Scadenza (5gg)</button>
+  <main class="p-4 space-y-4">
+    <div class="flex gap-2">
+      <button onclick="render('all')" class="px-4 py-2 bg-brand-500 text-white rounded-full text-xs font-bold">Tutti</button>
+      <button onclick="render('urgent')" class="px-4 py-2 bg-accent-500 text-white rounded-full text-xs font-bold">Urgenti (5gg)</button>
     </div>
 
-    <div id="products-container" class="space-y-3"></div>
+    <div id="list" class="space-y-3"></div>
   </main>
 
-  <div id="form-container" class="hidden fixed inset-0 bg-black/50 p-4 flex items-center justify-center z-50">
-    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl w-full max-w-sm space-y-4">
+  <button onclick="showModal(true)" class="fixed bottom-6 right-6 p-4 bg-brand-500 text-white rounded-full shadow-xl">
+    <i data-lucide="plus"></i>
+  </button>
+
+  <div id="modal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl w-full max-w-sm space-y-3">
       <h2 class="font-bold">Nuovo Prodotto</h2>
-      <input type="text" id="p-name" placeholder="Nome prodotto" class="w-full p-2 border rounded dark:bg-slate-700">
-      <input type="date" id="p-expiry" class="w-full p-2 border rounded dark:bg-slate-700">
+      <input type="text" id="in-name" placeholder="Nome prodotto" class="w-full p-2 border dark:bg-slate-700 rounded">
+      <input type="date" id="in-date" class="w-full p-2 border dark:bg-slate-700 rounded">
       <div class="flex gap-2">
-        <button onclick="saveProduct()" class="flex-1 bg-brand-500 text-white p-2 rounded">Salva</button>
-        <button onclick="toggleForm(false)" class="flex-1 bg-slate-300 p-2 rounded">Annulla</button>
+        <button onclick="save()" class="flex-1 bg-brand-500 text-white p-2 rounded">Salva</button>
+        <button onclick="showModal(false)" class="flex-1 bg-slate-200 dark:bg-slate-700 p-2 rounded">Chiudi</button>
       </div>
     </div>
   </div>
 
-  <button onclick="toggleForm(true)" class="fixed bottom-6 right-6 p-4 bg-brand-500 text-white rounded-full shadow-lg">
-    <i data-lucide="plus"></i>
-  </button>
-
   <script>
-    let products = JSON.parse(localStorage.getItem('scanean_products')) || [];
+    let db = JSON.parse(localStorage.getItem('products')) || [];
 
     function toggleDarkMode() {
       document.documentElement.classList.toggle('dark');
-      localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
     }
 
-    function toggleForm(show) {
-      document.getElementById('form-container').classList.toggle('hidden', !show);
-    }
+    function showModal(s) { document.getElementById('modal').classList.toggle('hidden', !s); }
 
-    function saveProduct() {
-      const name = document.getElementById('p-name').value;
-      const expiry = document.getElementById('p-expiry').value;
-      if (!name || !expiry) return alert("Compila tutto!");
+    function save() {
+      const name = document.getElementById('in-name').value;
+      const expiry = document.getElementById('in-date').value;
       
-      products.push({ id: Date.now(), name, expiry, qty: 1 });
-      localStorage.setItem('scanean_products', JSON.stringify(products));
-      toggleForm(false);
-      renderProducts();
+      if(db.find(p => p.name.toLowerCase() === name.toLowerCase())) {
+        return alert("Prodotto già presente in dispensa!");
+      }
+
+      db.push({ id: Date.now(), name, expiry, qty: 1, cat: (name.match(/latte|yogurt|carne/i) ? 'Frigorifero' : 'Dispensa') });
+      localStorage.setItem('products', JSON.stringify(db));
+      showModal(false);
+      render();
     }
 
-    function renderProducts(filter = 'all') {
-      const container = document.getElementById('products-container');
-      container.innerHTML = '';
-      const fiveDays = new Date();
-      fiveDays.setDate(fiveDays.getDate() + 5);
+    function render(filter = 'all') {
+      const list = document.getElementById('list');
+      list.innerHTML = '';
+      const limit = new Date(); limit.setDate(limit.getDate() + 5);
 
-      products.forEach(p => {
-        const isUrgent = new Date(p.expiry) <= fiveDays;
-        if (filter === 'urgent' && !isUrgent) return;
-
-        const div = document.createElement('div');
-        div.className = `p-4 rounded-xl border ${isUrgent ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : 'bg-white dark:bg-slate-800'}`;
-        div.innerHTML = `<div class="flex justify-between"><div><p class="font-bold">${p.name}</p><p class="text-xs">Scade: ${p.expiry}</p></div><button onclick="deleteProduct(${p.id})" class="text-red-500">Elimina</button></div>`;
-        container.appendChild(div);
+      db.forEach(p => {
+        if(filter === 'urgent' && new Date(p.expiry) > limit) return;
+        
+        const isUrgent = new Date(p.expiry) <= limit;
+        list.innerHTML += `
+          <div class="p-4 rounded-xl border ${isUrgent ? 'border-accent-500 bg-accent-50 dark:bg-accent-900/20' : 'bg-white dark:bg-slate-800'} shadow-sm">
+            <div class="flex justify-between items-center">
+              <div>
+                <p class="font-bold">${p.name} <span class="text-xs text-slate-400">${p.cat}</span></p>
+                <p class="text-xs">Scadenza: ${p.expiry}</p>
+              </div>
+              <button onclick="remove(${p.id})" class="text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            </div>
+          </div>`;
       });
       lucide.createIcons();
     }
 
-    function deleteProduct(id) {
-      products = products.filter(p => p.id !== id);
-      localStorage.setItem('scanean_products', JSON.stringify(products));
-      renderProducts();
+    function remove(id) {
+      db = db.filter(p => p.id !== id);
+      localStorage.setItem('products', JSON.stringify(db));
+      render();
     }
 
-    if(localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark');
-    renderProducts();
+    render();
     lucide.createIcons();
   </script>
 </body>
