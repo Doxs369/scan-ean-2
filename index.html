@@ -18,38 +18,35 @@
 </head>
 <body class="h-full flex flex-col font-sans select-none overflow-hidden bg-slate-50">
 
+  <!-- Header e altre sezioni rimangono invariate -->
   <header class="bg-white sticky top-0 z-40 px-4 py-3 flex items-center justify-between border-b border-slate-100 shadow-sm shrink-0">
     <div class="flex items-center gap-2">
       <div class="p-1.5 bg-brand-100 text-brand-600 rounded-lg"><i data-lucide="scan" class="w-6 h-6"></i></div>
-      <div>
-        <h1 class="text-lg font-bold tracking-tight text-slate-900">Scan Ean</h1>
-      </div>
+      <div><h1 class="text-lg font-bold tracking-tight text-slate-900">Scan Ean</h1></div>
     </div>
   </header>
 
   <main class="flex-1 overflow-y-auto pb-28 px-4 pt-4 no-scrollbar">
     <section id="view-add" class="space-y-4">
       <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-        <h2 id="form-title" class="text-md font-bold text-slate-900 flex items-center gap-2">
-          <i data-lucide="plus-circle" class="w-5 h-5 text-brand-500"></i> Dati Prodotto
-        </h2>
         
-        <input type="hidden" id="form-product-id" value="">
-
+        <!-- POSIZIONE CON PULSANTE + -->
         <div class="space-y-1.5">
           <label class="text-xs font-bold text-slate-500">Posizione</label>
-          <select id="form-category" onchange="checkCategorySelection(this.value)" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800">
-            <option value="Frigorifero">Frigorifero</option>
-            <option value="Dispensa" selected>Dispensa</option>
-            <option value="Congelatore">Congelatore</option>
-            <option value="Casa e Farmaci">Casa e Farmaci</option>
-            <option value="add_new" class="font-bold text-brand-600">+ Aggiungi categoria...</option>
-          </select>
+          <div class="flex gap-2">
+            <select id="form-category" class="flex-1 bg-slate-100 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800">
+              <option value="Frigorifero">Frigorifero</option>
+              <option value="Dispensa" selected>Dispensa</option>
+              <option value="Congelatore">Congelatore</option>
+              <option value="Casa e Farmaci">Casa e Farmaci</option>
+            </select>
+            <button type="button" onclick="addNewCategoryUI()" class="bg-brand-50 border border-brand-100 px-4 rounded-xl text-brand-600 font-bold hover:bg-brand-100 transition-colors">+</button>
+          </div>
         </div>
 
         <div class="space-y-1.5">
           <label class="text-xs font-bold text-slate-500">Nome Prodotto *</label>
-          <input type="text" id="form-name" placeholder="Nome prodotto" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm">
+          <input type="text" id="form-name" placeholder="Nome del prodotto" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm">
         </div>
 
         <button type="button" onclick="saveProduct()" class="w-full py-3 bg-brand-500 text-white rounded-xl text-sm font-bold">Salva</button>
@@ -59,48 +56,49 @@
 
   <script>
     // Caricamento categorie all'avvio
-    let customCategories = JSON.parse(localStorage.getItem('scanean_custom_categories')) || [];
-
     window.addEventListener('DOMContentLoaded', () => {
+      loadCustomCategories();
+      lucide.createIcons();
+    });
+
+    function loadCustomCategories() {
       const select = document.getElementById('form-category');
+      const customCategories = JSON.parse(localStorage.getItem('scanean_custom_categories')) || [];
       customCategories.forEach(cat => {
         const option = document.createElement('option');
         option.value = cat;
         option.textContent = cat;
-        select.insertBefore(option, select.querySelector('option[value="add_new"]'));
+        select.appendChild(option);
       });
-      lucide.createIcons();
-    });
+    }
 
-    function checkCategorySelection(value) {
-      if (value === 'add_new') {
-        const newCat = prompt("Nome della nuova categoria:");
-        if (newCat && newCat.trim() !== "") {
-          addCategory(newCat.trim());
-        } else {
-          document.getElementById('form-category').value = 'Dispensa';
-        }
+    function addNewCategoryUI() {
+      const newCat = prompt("Inserisci il nome della nuova categoria:");
+      if (newCat && newCat.trim() !== "") {
+        const name = newCat.trim();
+        const select = document.getElementById('form-category');
+        
+        // Aggiungi all'HTML
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        select.appendChild(option);
+        
+        // Salva nel localStorage
+        let customCategories = JSON.parse(localStorage.getItem('scanean_custom_categories')) || [];
+        customCategories.push(name);
+        localStorage.setItem('scanean_custom_categories', JSON.stringify(customCategories));
+        
+        // Seleziona la nuova categoria
+        select.value = name;
       }
     }
 
-    function addCategory(name) {
-      customCategories.push(name);
-      localStorage.setItem('scanean_custom_categories', JSON.stringify(customCategories));
-      
-      const select = document.getElementById('form-category');
-      const option = document.createElement('option');
-      option.value = name;
-      option.textContent = name;
-      select.insertBefore(option, select.querySelector('option[value="add_new"]'));
-      select.value = name;
-    }
-
     function saveProduct() {
-      // Logica di salvataggio esistente...
-      alert("Prodotto salvato nella categoria: " + document.getElementById('form-category').value);
+      const category = document.getElementById('form-category').value;
+      const name = document.getElementById('form-name').value;
+      alert("Prodotto '" + name + "' salvato in: " + category);
     }
-    
-    lucide.createIcons();
   </script>
 </body>
 </html>
