@@ -44,77 +44,92 @@
       -ms-overflow-style: none;
       scrollbar-width: none;
     }
+    input[type="date"] {
+      min-height: 42px;
+    }
   </style>
 </head>
 <body class="h-full flex flex-col font-sans select-none overflow-hidden bg-slate-50">
 
   <div id="ad-banner" class="bg-gradient-to-r from-accent-50 via-white to-accent-50 py-1.5 px-4 text-center text-xs border-b border-accent-100 flex items-center justify-between z-50 shrink-0">
-    <span class="text-accent-800 font-medium truncate">Sponsor: Risparmia il 20% sulla spesa con il codice SCANEAN20!</span>
+    <span class="text-accent-800 font-medium truncate">Sponsor: risparmia il 20% sulla spesa con il codice SCANEAN20</span>
     <button onclick="openPaypalModal()" class="bg-accent-500 text-white text-[10px] font-bold px-2 py-1 rounded hover:bg-accent-600 transition shadow-sm shrink-0">
-      Rimuovi Ads (1.99€)
+      Rimuovi Ads (1.99 EUR)
     </button>
   </div>
 
   <header class="bg-white sticky top-0 z-40 px-4 py-3 flex items-center justify-between border-b border-slate-100 shadow-sm shrink-0">
-    <div class="flex items-center gap-2">
-      <div class="p-1.5 bg-brand-100 text-brand-600 rounded-lg">
+    <div class="flex items-center gap-2 min-w-0">
+      <div class="p-1.5 bg-brand-100 text-brand-600 rounded-lg shrink-0">
         <i data-lucide="scan" class="w-6 h-6"></i>
       </div>
-      <div>
+      <div class="min-w-0">
         <h1 class="text-lg font-bold tracking-tight text-slate-900 flex items-center gap-1.5">
-          Scan Ean <span id="premium-badge" class="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full font-medium border border-slate-200">Free</span>
+          Scan Ean
+          <span id="premium-badge" class="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full font-medium border border-slate-200">Free</span>
         </h1>
-        <p class="text-[10px] text-slate-500 font-medium">Scansione rapida e gestione scadenze</p>
+        <p class="text-[10px] text-slate-500 font-medium truncate">Scansione rapida e gestione scadenze</p>
       </div>
     </div>
-    
-    <div class="flex gap-2">
-      <div class="text-center px-2 py-0.5 bg-brand-50 border border-brand-100 rounded-md">
-        <div id="stat-expired" class="text-xs font-bold text-brand-600">0</div>
-        <div class="text-[8px] uppercase text-brand-500 font-bold">In Dispensa</div>
-      </div>
+
+    <div class="text-center px-2 py-0.5 bg-brand-50 border border-brand-100 rounded-md shrink-0">
+      <div id="stat-total-header" class="text-xs font-bold text-brand-600">0</div>
+      <div class="text-[8px] uppercase text-brand-500 font-bold">In dispensa</div>
     </div>
   </header>
 
   <main class="flex-1 overflow-y-auto pb-28 px-4 pt-4 no-scrollbar">
-    
-    <!-- DASHBOARD DI DISPENSA -->
+
     <section id="view-dashboard" class="space-y-4">
+      <div class="grid grid-cols-3 gap-2">
+        <div class="bg-white border border-slate-200 rounded-xl p-3 text-center shadow-sm">
+          <div id="mini-total" class="text-lg font-bold text-slate-900">0</div>
+          <div class="text-[9px] uppercase font-bold text-slate-400">Totale</div>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-3 text-center shadow-sm">
+          <div id="mini-soon" class="text-lg font-bold text-accent-500">0</div>
+          <div class="text-[9px] uppercase font-bold text-slate-400">In scadenza</div>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-3 text-center shadow-sm">
+          <div id="mini-expired" class="text-lg font-bold text-red-500">0</div>
+          <div class="text-[9px] uppercase font-bold text-slate-400">Scaduti</div>
+        </div>
+      </div>
+
       <div class="relative">
         <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
-        <input type="text" id="search-input" placeholder="Cerca per nome, marca o codice..." class="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 text-slate-800 placeholder-slate-400 shadow-sm">
+        <input type="search" id="search-input" placeholder="Cerca per nome, marca o codice..." class="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 text-slate-800 placeholder-slate-400 shadow-sm">
       </div>
 
       <div class="flex gap-2 overflow-x-auto no-scrollbar py-1">
-        <button onclick="filterCategory(event, 'all')" class="category-btn active px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all bg-brand-500 text-white shadow-sm">
-          Tutti
+        <button data-category="all" onclick="filterCategory(event, 'all')" class="category-btn active px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all bg-brand-500 text-white shadow-sm">
+          Tutti <span data-count="all" class="opacity-80">0</span>
         </button>
-        <button onclick="filterCategory(event, 'Frigorifero')" class="category-btn px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all bg-white text-slate-600 border border-slate-200 hover:border-slate-300 shadow-sm">
-          ❄️ Frigorifero
+        <button data-category="Frigorifero" onclick="filterCategory(event, 'Frigorifero')" class="category-btn px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all bg-white text-slate-600 border border-slate-200 hover:border-slate-300 shadow-sm">
+          Frigorifero <span data-count="Frigorifero" class="opacity-70">0</span>
         </button>
-        <button onclick="filterCategory(event, 'Dispensa')" class="category-btn px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all bg-white text-slate-600 border border-slate-200 hover:border-slate-300 shadow-sm">
-          🌾 Dispensa
+        <button data-category="Dispensa" onclick="filterCategory(event, 'Dispensa')" class="category-btn px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all bg-white text-slate-600 border border-slate-200 hover:border-slate-300 shadow-sm">
+          Dispensa <span data-count="Dispensa" class="opacity-70">0</span>
         </button>
-        <button onclick="filterCategory(event, 'Congelatore')" class="category-btn px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all bg-white text-slate-600 border border-slate-200 hover:border-slate-300 shadow-sm">
-          🧊 Congelatore
+        <button data-category="Congelatore" onclick="filterCategory(event, 'Congelatore')" class="category-btn px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all bg-white text-slate-600 border border-slate-200 hover:border-slate-300 shadow-sm">
+          Congelatore <span data-count="Congelatore" class="opacity-70">0</span>
         </button>
-        <button onclick="filterCategory(event, 'Casa e Farmaci')" class="category-btn px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all bg-white text-slate-600 border border-slate-200 hover:border-slate-300 shadow-sm">
-          💊 Casa e Farmaci
+        <button data-category="Casa e Farmaci" onclick="filterCategory(event, 'Casa e Farmaci')" class="category-btn px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all bg-white text-slate-600 border border-slate-200 hover:border-slate-300 shadow-sm">
+          Casa e Farmaci <span data-count="Casa e Farmaci" class="opacity-70">0</span>
         </button>
       </div>
 
       <div id="products-container" class="space-y-3"></div>
-      
+
       <div id="empty-state" class="hidden flex flex-col items-center justify-center py-16 text-center">
         <div class="p-4 bg-white rounded-full text-slate-300 mb-3 border border-slate-100 shadow-sm">
           <i data-lucide="package-open" class="w-12 h-12 text-brand-500"></i>
         </div>
         <p class="text-sm font-semibold text-slate-700">Nessun prodotto registrato</p>
-        <p class="text-xs text-slate-500 mt-1 max-w-[200px]">Usa il lettore per scansionare qualsiasi codice EAN o QR Code!</p>
+        <p id="empty-subtitle" class="text-xs text-slate-500 mt-1 max-w-[220px]">Usa il lettore per scansionare un codice EAN o QR.</p>
       </div>
     </section>
 
-    <!-- SCHERMATA SCANNER -->
     <section id="view-scan" class="hidden space-y-4">
       <div class="bg-white rounded-2xl overflow-hidden relative border border-slate-200 shadow-sm flex flex-col items-center justify-center min-h-[240px]">
         <div id="scanner-reader" class="w-full aspect-[4/3] bg-black"></div>
@@ -131,58 +146,56 @@
       </div>
     </section>
 
-    <!-- SCHERMATA DETTAGLIO / INSERIMENTO -->
     <section id="view-add" class="hidden space-y-4">
       <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
         <div class="flex justify-between items-center">
           <h2 id="form-title" class="text-md font-bold text-slate-900 flex items-center gap-2">
-            <i data-lucide="plus-circle" class="w-5 h-5 text-brand-500"></i> Dati Prodotto
+            <i data-lucide="plus-circle" class="w-5 h-5 text-brand-500"></i> Dati prodotto
           </h2>
         </div>
-        
+
         <input type="hidden" id="form-product-id" value="">
 
-        <!-- SEZIONE UNICA FOTOCAMERA PRODOTTO CON ICONA DI SCATTO DIRETTO -->
         <div class="space-y-2 border border-slate-200 rounded-xl p-3 bg-slate-50 flex flex-col items-center justify-center">
-          <span class="text-xs font-bold text-slate-500 self-start">Foto del Prodotto (Abbina a EAN)</span>
-          
+          <div class="flex items-center justify-between w-full gap-2">
+            <span class="text-xs font-bold text-slate-500">Foto del prodotto</span>
+            <button type="button" onclick="resetPhotoUI()" class="text-[10px] font-bold text-slate-400 hover:text-red-500">Rimuovi</button>
+          </div>
+
           <div class="w-full relative flex items-center justify-center bg-white rounded-lg overflow-hidden border border-slate-200 min-h-[130px]">
-            <!-- Finestra Video per inquadratura -->
             <video id="product-video" autoplay playsinline class="hidden w-full max-h-44 object-cover bg-black"></video>
-            <!-- Anteprima dell'immagine scattata -->
-            <img id="product-preview" class="hidden w-28 h-28 object-cover rounded-md my-2 border shadow-sm" src="">
-            
+            <img id="product-preview" class="hidden w-28 h-28 object-cover rounded-md my-2 border shadow-sm" src="" alt="Anteprima prodotto">
+
             <div id="photo-placeholder" class="text-center py-5">
               <i data-lucide="image" class="w-6 h-6 text-slate-300 mx-auto mb-1"></i>
               <span class="text-[11px] text-slate-400 block font-medium">Nessuna foto associata</span>
             </div>
           </div>
 
-          <!-- Pulsante Unico con Icona Fotocamera Dinamico -->
           <button type="button" id="btn-camera-action" onclick="handleCameraAction()" class="w-full py-2.5 bg-brand-500 text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm active:bg-brand-600 transition-all">
             <i id="camera-icon" data-lucide="camera" class="w-4 h-4"></i>
-            <span id="camera-text">Scatta Foto Prodotto</span>
+            <span id="camera-text">Scatta foto prodotto</span>
           </button>
           <input type="hidden" id="form-photo" value="">
         </div>
 
         <div class="space-y-1.5">
-          <label class="text-xs font-bold text-slate-500">Codice EAN / QR</label>
-          <input type="text" id="form-barcode" oninput="checkExistingEan(this.value)" placeholder="EAN o QR" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-mono text-slate-800">
+          <label for="form-barcode" class="text-xs font-bold text-slate-500">Codice EAN / QR</label>
+          <input type="text" id="form-barcode" oninput="checkExistingEan(this.value)" placeholder="EAN o QR" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-mono text-slate-800 focus:outline-none focus:border-brand-500">
         </div>
 
         <div class="grid grid-cols-2 gap-3">
           <div class="space-y-1.5 col-span-2">
-            <label class="text-xs font-bold text-slate-500">Nome Prodotto *</label>
-            <input type="text" id="form-name" placeholder="Nome del prodotto" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800">
+            <label for="form-name" class="text-xs font-bold text-slate-500">Nome prodotto *</label>
+            <input type="text" id="form-name" placeholder="Nome del prodotto" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-brand-500">
           </div>
           <div class="space-y-1.5">
-            <label class="text-xs font-bold text-slate-500">Marca</label>
-            <input type="text" id="form-brand" placeholder="Es. Barilla" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800">
+            <label for="form-brand" class="text-xs font-bold text-slate-500">Marca</label>
+            <input type="text" id="form-brand" placeholder="Es. Barilla" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-brand-500">
           </div>
           <div class="space-y-1.5">
-            <label class="text-xs font-bold text-slate-500">Posizione</label>
-            <select id="form-category" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800">
+            <label for="form-category" class="text-xs font-bold text-slate-500">Posizione</label>
+            <select id="form-category" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-brand-500">
               <option value="Frigorifero">Frigorifero</option>
               <option value="Dispensa" selected>Dispensa</option>
               <option value="Congelatore">Congelatore</option>
@@ -192,33 +205,41 @@
         </div>
 
         <div class="space-y-1.5">
-          <label class="text-xs font-bold text-slate-500">Data di Scadenza *</label>
-          <input type="date" id="form-expiry" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800">
+          <label for="form-expiry" class="text-xs font-bold text-slate-500">Data di scadenza *</label>
+          <input type="date" id="form-expiry" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-brand-500">
         </div>
 
         <div class="space-y-1.5">
-          <label class="text-xs font-bold text-slate-500">Note Personalizzate</label>
-          <textarea id="form-notes" rows="2" placeholder="Note..." class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-800 resize-none"></textarea>
+          <label for="form-notes" class="text-xs font-bold text-slate-500">Note personalizzate</label>
+          <textarea id="form-notes" rows="2" placeholder="Note..." class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-800 resize-none focus:outline-none focus:border-brand-500"></textarea>
         </div>
 
         <div class="flex gap-3 pt-2">
           <button type="button" onclick="stopCamera(); resetForm(); switchView('dashboard')" class="flex-1 py-3 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700">
             Annulla
           </button>
-          <button type="button" onclick="saveProduct()" class="flex-1 py-3 bg-brand-500 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1 shadow-sm">
+          <button type="button" onclick="saveProduct()" class="flex-1 py-3 bg-brand-500 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1 shadow-sm active:bg-brand-600">
             <i data-lucide="check" class="w-4 h-4"></i> Salva
           </button>
         </div>
       </div>
     </section>
 
-    <!-- REPORT / IMPOSTAZIONI -->
     <section id="view-stats" class="hidden space-y-4">
       <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
         <h2 class="text-md font-bold text-slate-900 flex items-center gap-2">
           <i data-lucide="bar-chart-3" class="w-5 h-5 text-brand-500"></i> Statistiche
         </h2>
+
         <div class="grid grid-cols-2 gap-3">
+          <div class="p-3 bg-slate-50 rounded-xl text-center">
+            <div id="stat-in-stock" class="text-2xl font-bold text-slate-900">0</div>
+            <p class="text-[10px] text-slate-500">In dispensa</p>
+          </div>
+          <div class="p-3 bg-slate-50 rounded-xl text-center">
+            <div id="stat-expiring" class="text-2xl font-bold text-accent-500">0</div>
+            <p class="text-[10px] text-slate-500">Entro 3 giorni</p>
+          </div>
           <div class="p-3 bg-slate-50 rounded-xl text-center">
             <div id="stat-consumed" class="text-2xl font-bold text-brand-500">0</div>
             <p class="text-[10px] text-slate-500">Consumati</p>
@@ -228,8 +249,27 @@
             <p class="text-[10px] text-slate-500">Sprecati</p>
           </div>
         </div>
+
+        <div class="p-3 bg-brand-50 border border-brand-100 rounded-xl flex items-center justify-between">
+          <div>
+            <p class="text-xs font-bold text-brand-700">Indice spreco</p>
+            <p class="text-[10px] text-brand-600">Calcolato su consumati e sprecati</p>
+          </div>
+          <div id="stat-waste-rate" class="text-xl font-bold text-brand-700">0%</div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <button onclick="exportData()" class="py-3 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 flex items-center justify-center gap-2">
+            <i data-lucide="download" class="w-4 h-4 text-brand-500"></i> Esporta
+          </button>
+          <button onclick="document.getElementById('import-file').click()" class="py-3 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 flex items-center justify-center gap-2">
+            <i data-lucide="upload" class="w-4 h-4 text-brand-500"></i> Importa
+          </button>
+        </div>
+        <input type="file" id="import-file" accept="application/json,.json" class="hidden">
+
         <button onclick="clearDatabase()" class="w-full py-3 bg-red-50 text-red-600 rounded-xl text-xs font-semibold">
-          Resetta Tutto il Database
+          Resetta dati Scan Ean
         </button>
       </div>
     </section>
@@ -241,7 +281,7 @@
       <i data-lucide="layout-grid" class="w-5 h-5"></i>
       <span class="text-[9px] font-bold">Dispensa</span>
     </button>
-    <button onclick="resetForm(); startScanning(); switchView('scan')" id="nav-scan" class="flex flex-col items-center justify-center w-14 h-14 bg-brand-500 text-white rounded-full -translate-y-4 shadow-md border-4 border-slate-50">
+    <button onclick="openScanner()" id="nav-scan" class="flex flex-col items-center justify-center w-14 h-14 bg-brand-500 text-white rounded-full -translate-y-4 shadow-md border-4 border-slate-50">
       <i data-lucide="scan-line" class="w-6 h-6"></i>
     </button>
     <button onclick="switchView('stats')" id="nav-stats" class="flex flex-col items-center gap-1 text-slate-400">
@@ -250,43 +290,143 @@
     </button>
   </nav>
 
-  <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 py-2.5 px-4 bg-slate-900/90 text-white rounded-full text-xs font-semibold opacity-0 transition-opacity pointer-events-none">
-    <span id="toast-text">Messaggio</span>
+  <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 py-2.5 px-4 bg-slate-900/90 text-white rounded-full text-xs font-semibold opacity-0 transition-opacity pointer-events-none flex items-center gap-3 max-w-[92vw]">
+    <span id="toast-text" class="truncate">Messaggio</span>
+    <button id="toast-action" class="hidden text-brand-100 font-bold underline underline-offset-2">Annulla</button>
+  </div>
+
+  <div id="premium-modal" class="hidden fixed inset-0 z-[60] bg-slate-900/50 px-4 flex items-center justify-center">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-xl p-5 w-full max-w-sm space-y-4">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h3 class="text-base font-bold text-slate-900">Rimuovi banner</h3>
+          <p class="text-xs text-slate-500 mt-1">Questa demo attiva la modalita Premium locale. Potrai collegare PayPal in seguito.</p>
+        </div>
+        <button onclick="closePremiumModal()" class="p-2 bg-slate-50 rounded-lg text-slate-500">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <button onclick="activatePremium()" class="w-full py-3 bg-accent-500 text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-sm">
+        Attiva demo Premium
+      </button>
+      <button onclick="closePremiumModal()" class="w-full py-3 bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold">
+        Non ora
+      </button>
+    </div>
   </div>
 
   <script>
-    let products = JSON.parse(localStorage.getItem('scanean_products')) || [];
-    let consumedCount = parseInt(localStorage.getItem('scanean_consumed')) || 0;
-    let thrownCount = parseInt(localStorage.getItem('scanean_thrown')) || 0;
+    const STORAGE_KEYS = {
+      products: 'scanean_products',
+      consumed: 'scanean_consumed',
+      thrown: 'scanean_thrown',
+      premium: 'scanean_premium'
+    };
+
+    let products = readProducts();
+    let consumedCount = readNumber(STORAGE_KEYS.consumed);
+    let thrownCount = readNumber(STORAGE_KEYS.thrown);
+    let premiumEnabled = localStorage.getItem(STORAGE_KEYS.premium) === 'true';
     let activeCategory = 'all';
+    let searchQuery = '';
     let html5QrScanner = null;
+    let scannerIsRunning = false;
     let cameraStream = null;
     let isCameraActive = false;
+    let toastTimer = null;
+    let lastRemovedAction = null;
 
-    lucide.createIcons();
+    document.addEventListener('DOMContentLoaded', initApp);
 
-    window.addEventListener('DOMContentLoaded', () => {
-      renderProducts();
+    function initApp() {
+      const searchInput = byId('search-input');
+      const importInput = byId('import-file');
+
+      searchInput.addEventListener('input', () => {
+        searchQuery = searchInput.value.trim().toLowerCase();
+        renderProducts();
+      });
+
+      importInput.addEventListener('change', importData);
+
+      applyPremiumState();
+      renderAll();
+      createIcons();
+    }
+
+    function byId(id) {
+      return document.getElementById(id);
+    }
+
+    function createIcons() {
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function readProducts() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(STORAGE_KEYS.products) || '[]');
+        return Array.isArray(parsed) ? parsed.map(normalizeProduct).filter(Boolean) : [];
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function readNumber(key) {
+      const value = Number.parseInt(localStorage.getItem(key) || '0', 10);
+      return Number.isFinite(value) ? value : 0;
+    }
+
+    function normalizeProduct(product) {
+      if (!product || typeof product !== 'object') return null;
+      return {
+        id: String(product.id || makeId()),
+        name: String(product.name || '').trim(),
+        barcode: String(product.barcode || '').trim(),
+        brand: String(product.brand || '').trim(),
+        category: product.category || 'Dispensa',
+        expiry: String(product.expiry || '').trim(),
+        notes: String(product.notes || '').trim(),
+        photo: isSafePhoto(product.photo) ? product.photo : '',
+        createdAt: product.createdAt || new Date().toISOString(),
+        updatedAt: product.updatedAt || new Date().toISOString()
+      };
+    }
+
+    function persistState() {
+      try {
+        localStorage.setItem(STORAGE_KEYS.products, JSON.stringify(products));
+        localStorage.setItem(STORAGE_KEYS.consumed, String(consumedCount));
+        localStorage.setItem(STORAGE_KEYS.thrown, String(thrownCount));
+        return true;
+      } catch (error) {
+        showToast('Memoria piena: elimina foto o prodotti vecchi.');
+        return false;
+      }
+    }
+
+    function renderAll() {
       updateDashboardStats();
-    });
+      updateCategoryCounts();
+      renderProducts();
+      renderStats();
+    }
 
     function switchView(viewId) {
-      const views = ['dashboard', 'scan', 'add', 'stats'];
-      views.forEach(v => {
-        const el = document.getElementById(`view-${v}`);
-        if (el) el.classList.add('hidden');
-        
-        const navBtn = document.getElementById(`nav-${v}`);
-        if (navBtn && v !== 'scan') {
+      ['dashboard', 'scan', 'add', 'stats'].forEach(view => {
+        const viewEl = byId('view-' + view);
+        if (viewEl) viewEl.classList.add('hidden');
+
+        const navBtn = byId('nav-' + view);
+        if (navBtn && view !== 'scan') {
           navBtn.classList.remove('text-brand-500');
           navBtn.classList.add('text-slate-400');
         }
       });
 
-      const activeView = document.getElementById(`view-${viewId}`);
+      const activeView = byId('view-' + viewId);
       if (activeView) activeView.classList.remove('hidden');
-      
-      const activeNav = document.getElementById(`nav-${viewId}`);
+
+      const activeNav = byId('nav-' + viewId);
       if (activeNav && viewId !== 'scan') {
         activeNav.classList.remove('text-slate-400');
         activeNav.classList.add('text-brand-500');
@@ -295,96 +435,150 @@
       if (viewId !== 'scan') stopScanning();
       if (viewId !== 'add') stopCamera();
       if (viewId === 'stats') renderStats();
+      createIcons();
     }
 
-    function showToast(text) {
-      const toast = document.getElementById('toast');
-      const toastText = document.getElementById('toast-text');
-      if (toast && toastText) {
-        toastText.textContent = text;
-        toast.classList.remove('opacity-0');
-        setTimeout(() => { toast.classList.add('opacity-0'); }, 2000);
+    function showToast(text, actionLabel, actionCallback) {
+      const toast = byId('toast');
+      const toastText = byId('toast-text');
+      const toastAction = byId('toast-action');
+
+      clearTimeout(toastTimer);
+      toastText.textContent = text;
+      toast.classList.remove('opacity-0', 'pointer-events-none');
+
+      if (actionLabel && typeof actionCallback === 'function') {
+        toastAction.textContent = actionLabel;
+        toastAction.classList.remove('hidden');
+        toastAction.onclick = () => {
+          actionCallback();
+          hideToast();
+        };
+      } else {
+        toastAction.classList.add('hidden');
+        toastAction.onclick = null;
+      }
+
+      toastTimer = setTimeout(hideToast, actionLabel ? 4500 : 2200);
+    }
+
+    function hideToast() {
+      const toast = byId('toast');
+      toast.classList.add('opacity-0', 'pointer-events-none');
+    }
+
+    function openPaypalModal() {
+      byId('premium-modal').classList.remove('hidden');
+      createIcons();
+    }
+
+    function closePremiumModal() {
+      byId('premium-modal').classList.add('hidden');
+    }
+
+    function activatePremium() {
+      premiumEnabled = true;
+      localStorage.setItem(STORAGE_KEYS.premium, 'true');
+      applyPremiumState();
+      closePremiumModal();
+      showToast('Premium attivato su questo browser.');
+    }
+
+    function applyPremiumState() {
+      const banner = byId('ad-banner');
+      const badge = byId('premium-badge');
+
+      if (premiumEnabled) {
+        banner.classList.add('hidden');
+        badge.textContent = 'Premium';
+        badge.className = 'text-[9px] bg-brand-50 text-brand-700 px-1.5 py-0.5 rounded-full font-medium border border-brand-100';
+      } else {
+        banner.classList.remove('hidden');
+        badge.textContent = 'Free';
+        badge.className = 'text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full font-medium border border-slate-200';
       }
     }
 
-    // FUNZIONE DI AUTOCAMPIONAMENTO DA EAN CONOSCIUTO
     function checkExistingEan(barcodeText) {
-      if (!barcodeText || document.getElementById('form-product-id').value !== '') return;
-      
-      const existingProduct = products.find(p => p.barcode === barcodeText.trim());
-      
-      if (existingProduct) {
-        document.getElementById('form-name').value = existingProduct.name || '';
-        document.getElementById('form-brand').value = existingProduct.brand || '';
-        document.getElementById('form-category').value = existingProduct.category || 'Dispensa';
-        document.getElementById('form-notes').value = existingProduct.notes || '';
-        
-        if (existingProduct.photo) {
-          document.getElementById('form-photo').value = existingProduct.photo;
-          const preview = document.getElementById('product-preview');
-          preview.src = existingProduct.photo;
-          preview.classList.remove('hidden');
-          document.getElementById('photo-placeholder').classList.add('hidden');
-        }
-        
-        showToast("Prodotto riconosciuto! Inserisci solo la nuova scadenza.");
-        
-        setTimeout(() => {
-          document.getElementById('form-expiry').focus();
-        }, 300);
-      }
+      const productId = byId('form-product-id').value;
+      const barcode = String(barcodeText || '').trim();
+      if (!barcode || productId) return false;
+
+      const existingProduct = products
+        .filter(product => product.barcode && product.barcode === barcode)
+        .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0];
+
+      if (!existingProduct) return false;
+
+      byId('form-name').value = existingProduct.name || '';
+      byId('form-brand').value = existingProduct.brand || '';
+      byId('form-category').value = existingProduct.category || 'Dispensa';
+      byId('form-notes').value = existingProduct.notes || '';
+
+      if (existingProduct.photo) setPhotoPreview(existingProduct.photo);
+
+      showToast('Prodotto riconosciuto: inserisci la nuova scadenza.');
+      setTimeout(() => byId('form-expiry').focus(), 250);
+      return true;
     }
 
-    // LOGICA DI CONTROLLO DINAMICA DEL PULSANTE FOTOCAMERA
     function handleCameraAction() {
       if (!isCameraActive) {
-        const video = document.getElementById('product-video');
-        const placeholder = document.getElementById('photo-placeholder');
-        const preview = document.getElementById('product-preview');
-        
-        placeholder.classList.add('hidden');
-        preview.classList.add('hidden');
-        video.classList.remove('hidden');
-
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false })
-          .then(stream => {
-            cameraStream = stream;
-            video.srcObject = stream;
-            isCameraActive = true;
-            
-            document.getElementById('camera-text').textContent = "Scatta Ora";
-            const iconEl = document.getElementById('camera-icon');
-            iconEl.setAttribute('data-lucide', 'aperture');
-            lucide.createIcons();
-          })
-          .catch(err => {
-            showToast("Impossibile accedere alla fotocamera");
-            resetPhotoUI();
-          });
+        startProductCamera();
       } else {
-        const video = document.getElementById('product-video');
-        const canvas = document.createElement('canvas');
-        
-        canvas.width = 240;
-        canvas.height = 240;
-        const ctx = canvas.getContext('2d');
-        
-        const minDim = Math.min(video.videoWidth, video.videoHeight);
-        const sx = (video.videoWidth - minDim) / 2;
-        const sy = (video.videoHeight - minDim) / 2;
-        
-        ctx.drawImage(video, sx, sy, minDim, minDim, 0, 0, canvas.width, canvas.height);
-        
-        const base64 = canvas.toDataURL('image/jpeg', 0.7);
-        document.getElementById('form-photo').value = base64;
-        
-        const preview = document.getElementById('product-preview');
-        preview.src = base64;
-        preview.classList.remove('hidden');
-        
-        stopCamera();
-        showToast("Foto abbinata al prodotto!");
+        captureProductPhoto();
       }
+    }
+
+    async function startProductCamera() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showToast('Fotocamera non supportata da questo browser.');
+        return;
+      }
+
+      const video = byId('product-video');
+      byId('photo-placeholder').classList.add('hidden');
+      byId('product-preview').classList.add('hidden');
+      video.classList.remove('hidden');
+
+      try {
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' } },
+          audio: false
+        });
+
+        video.srcObject = cameraStream;
+        isCameraActive = true;
+        byId('camera-text').textContent = 'Scatta ora';
+        byId('camera-icon').setAttribute('data-lucide', 'aperture');
+        createIcons();
+      } catch (error) {
+        showToast('Impossibile accedere alla fotocamera.');
+        resetPhotoUI();
+      }
+    }
+
+    function captureProductPhoto() {
+      const video = byId('product-video');
+      if (!video.videoWidth || !video.videoHeight) {
+        showToast('Attendi un istante: camera in avvio.');
+        return;
+      }
+
+      const canvas = document.createElement('canvas');
+      const size = 320;
+      canvas.width = size;
+      canvas.height = size;
+
+      const ctx = canvas.getContext('2d');
+      const minDim = Math.min(video.videoWidth, video.videoHeight);
+      const sx = (video.videoWidth - minDim) / 2;
+      const sy = (video.videoHeight - minDim) / 2;
+
+      ctx.drawImage(video, sx, sy, minDim, minDim, 0, 0, size, size);
+      setPhotoPreview(canvas.toDataURL('image/jpeg', 0.72));
+      stopCamera();
+      showToast('Foto abbinata al prodotto.');
     }
 
     function stopCamera() {
@@ -392,231 +586,587 @@
         cameraStream.getTracks().forEach(track => track.stop());
         cameraStream = null;
       }
+
       isCameraActive = false;
-      document.getElementById('product-video').classList.add('hidden');
-      
-      document.getElementById('camera-text').textContent = "Scatta Foto Prodotto";
-      const iconEl = document.getElementById('camera-icon');
-      iconEl.setAttribute('data-lucide', 'camera');
-      lucide.createIcons();
+      byId('product-video').classList.add('hidden');
+      byId('camera-text').textContent = 'Scatta foto prodotto';
+      byId('camera-icon').setAttribute('data-lucide', 'camera');
+      createIcons();
+    }
+
+    function setPhotoPreview(photoData) {
+      if (!isSafePhoto(photoData)) return;
+
+      byId('form-photo').value = photoData;
+      const preview = byId('product-preview');
+      preview.src = photoData;
+      preview.classList.remove('hidden');
+      byId('photo-placeholder').classList.add('hidden');
     }
 
     function resetPhotoUI() {
       stopCamera();
-      document.getElementById('form-photo').value = '';
-      document.getElementById('product-preview').classList.add('hidden');
-      document.getElementById('product-preview').src = '';
-      document.getElementById('photo-placeholder').classList.remove('hidden');
+      byId('form-photo').value = '';
+      byId('product-preview').classList.add('hidden');
+      byId('product-preview').src = '';
+      byId('photo-placeholder').classList.remove('hidden');
     }
 
     function resetForm() {
-      document.getElementById('form-product-id').value = '';
-      document.getElementById('form-name').value = '';
-      document.getElementById('form-barcode').value = '';
-      document.getElementById('form-brand').value = '';
-      document.getElementById('form-category').value = 'Dispensa';
-      document.getElementById('form-expiry').value = '';
-      document.getElementById('form-notes').value = '';
+      byId('form-product-id').value = '';
+      byId('form-name').value = '';
+      byId('form-barcode').value = '';
+      byId('form-brand').value = '';
+      byId('form-category').value = 'Dispensa';
+      byId('form-expiry').value = '';
+      byId('form-notes').value = '';
       resetPhotoUI();
-      document.getElementById('form-title').innerHTML = `<i data-lucide="plus-circle" class="w-5 h-5 text-brand-500"></i> Dati Prodotto`;
-      lucide.createIcons();
+      byId('form-title').innerHTML = '<i data-lucide="plus-circle" class="w-5 h-5 text-brand-500"></i> Dati prodotto';
+      createIcons();
     }
 
     function editProduct(id) {
-      const product = products.find(p => p.id === id);
+      const product = products.find(item => item.id === id);
       if (!product) return;
 
       resetForm();
+      byId('form-product-id').value = product.id;
+      byId('form-name').value = product.name || '';
+      byId('form-barcode').value = product.barcode || '';
+      byId('form-brand').value = product.brand || '';
+      byId('form-category').value = product.category || 'Dispensa';
+      byId('form-expiry').value = product.expiry || '';
+      byId('form-notes').value = product.notes || '';
 
-      document.getElementById('form-product-id').value = product.id;
-      document.getElementById('form-name').value = product.name || '';
-      document.getElementById('form-barcode').value = product.barcode || '';
-      document.getElementById('form-brand').value = product.brand || '';
-      document.getElementById('form-category').value = product.category || 'Dispensa';
-      document.getElementById('form-expiry').value = product.expiry || '';
-      document.getElementById('form-notes').value = product.notes || '';
-      
-      if (product.photo) {
-        document.getElementById('form-photo').value = product.photo;
-        const preview = document.getElementById('product-preview');
-        preview.src = product.photo;
-        preview.classList.remove('hidden');
-        document.getElementById('photo-placeholder').classList.add('hidden');
-      }
-      
-      document.getElementById('form-title').innerHTML = `<i data-lucide="edit" class="w-5 h-5 text-brand-500"></i> Modifica Prodotto`;
-      lucide.createIcons();
+      if (product.photo) setPhotoPreview(product.photo);
 
+      byId('form-title').innerHTML = '<i data-lucide="edit" class="w-5 h-5 text-brand-500"></i> Modifica prodotto';
+      createIcons();
       switchView('add');
     }
 
     function saveProduct() {
-      const productId = document.getElementById('form-product-id').value;
-      const name = document.getElementById('form-name').value.trim();
-      const barcode = document.getElementById('form-barcode').value.trim();
-      const brand = document.getElementById('form-brand').value.trim();
-      const category = document.getElementById('form-category').value;
-      const expiry = document.getElementById('form-expiry').value;
-      const notes = document.getElementById('form-notes').value.trim();
-      const photo = document.getElementById('form-photo').value;
+      const productId = byId('form-product-id').value;
+      const name = byId('form-name').value.trim();
+      const barcode = byId('form-barcode').value.trim();
+      const brand = byId('form-brand').value.trim();
+      const category = byId('form-category').value;
+      const expiry = byId('form-expiry').value;
+      const notes = byId('form-notes').value.trim();
+      const photo = byId('form-photo').value;
 
       if (!name || !expiry) {
-        showToast("Inserisci nome e data di scadenza!");
+        showToast('Inserisci nome e data di scadenza.');
         return;
       }
 
-      if (productId) {
-        const index = products.findIndex(p => p.id === productId);
-        if (index !== -1) {
-          products[index] = {
-            id: productId,
-            name: name,
-            barcode: barcode,
-            brand: brand,
-            category: category,
-            expiry: expiry,
-            notes: notes,
-            photo: photo
-          };
-          showToast("Prodotto modificato con successo!");
-        }
-      } else {
-        const newProduct = {
-          id: 'p_' + Date.now(),
-          name: name,
-          barcode: barcode,
-          brand: brand,
-          category: category,
-          expiry: expiry,
-          notes: notes,
-          photo: photo
-        };
-        products.push(newProduct);
-        showToast("Prodotto salvato!");
-      }
-      
-      try {
-        localStorage.setItem('scanean_products', JSON.stringify(products));
-      } catch(e) {
-        showToast("Errore di memoria! Libera spazio cancellando vecchi prodotti.");
+      if (!isValidDate(expiry)) {
+        showToast('Data di scadenza non valida.');
         return;
       }
-      
+
+      const sameBarcodeAndDate = products.some(product =>
+        product.id !== productId &&
+        product.barcode &&
+        product.barcode === barcode &&
+        product.expiry === expiry
+      );
+
+      if (barcode && sameBarcodeAndDate && !confirm('Esiste gia un prodotto con lo stesso codice e la stessa scadenza. Vuoi salvarlo comunque?')) {
+        return;
+      }
+
+      const now = new Date().toISOString();
+
+      if (productId) {
+        const index = products.findIndex(product => product.id === productId);
+        if (index !== -1) {
+          products[index] = {
+            ...products[index],
+            name,
+            barcode,
+            brand,
+            category,
+            expiry,
+            notes,
+            photo,
+            updatedAt: now
+          };
+          showToast('Prodotto modificato.');
+        }
+      } else {
+        products.push({
+          id: makeId(),
+          name,
+          barcode,
+          brand,
+          category,
+          expiry,
+          notes,
+          photo,
+          createdAt: now,
+          updatedAt: now
+        });
+        showToast('Prodotto salvato.');
+      }
+
+      if (!persistState()) return;
+
       resetForm();
-      updateDashboardStats();
+      renderAll();
       switchView('dashboard');
-      renderProducts();
     }
 
     function renderProducts() {
-      const container = document.getElementById('products-container');
-      const emptyState = document.getElementById('empty-state');
-      if (!container) return;
+      const container = byId('products-container');
+      const emptyState = byId('empty-state');
+      const emptySubtitle = byId('empty-subtitle');
       container.innerHTML = '';
 
-      let filtered = products.filter(p => activeCategory === 'all' || p.category === activeCategory);
+      const filtered = products
+        .filter(product => activeCategory === 'all' || product.category === activeCategory)
+        .filter(matchesSearch)
+        .sort(sortByExpiry);
 
       if (filtered.length === 0) {
         emptyState.classList.remove('hidden');
-      } else {
-        emptyState.classList.add('hidden');
-        filtered.forEach(p => {
-          const div = document.createElement('div');
-          div.className = 'bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-3 cursor-pointer active:bg-slate-50 transition-colors';
-          div.setAttribute('onclick', `editProduct('${p.id}')`);
-          
-          const imgHTML = p.photo 
-            ? `<img src="${p.photo}" class="w-10 h-10 object-cover rounded-lg border border-slate-100 shrink-0">`
-            : `<div class="w-10 h-10 bg-slate-50 border border-slate-100 rounded-lg flex items-center justify-center text-slate-300 shrink-0">
-                <i data-lucide="package" class="w-5 h-5 text-brand-500"></i>
-               </div>`;
-
-          div.innerHTML = `
-            <div class="flex items-center gap-3 min-w-0 flex-1">
-              ${imgHTML}
-              <div class="min-w-0 flex-1">
-                <span class="text-xs font-bold text-slate-900 block truncate">${p.name}</span>
-                <p class="text-[11px] text-slate-500 truncate">${p.brand || 'Nessuna marca'} &bull; ${p.category}</p>
-                <p class="text-[10px] text-brand-600 font-semibold mt-0.5">Scadenza: ${p.expiry}</p>
-                ${p.notes ? `<p class="text-[10px] text-slate-400 italic truncate">Note: ${p.notes}</p>` : ''}
-              </div>
-            </div>
-            <div class="flex gap-1.5 shrink-0" onclick="event.stopPropagation();">
-              <button onclick="consumeProduct('${p.id}')" class="p-2 bg-brand-50 text-brand-600 rounded-lg"><i data-lucide="check" class="w-4 h-4"></i></button>
-              <button onclick="throwProduct('${p.id}')" class="p-2 bg-red-50 text-red-600 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-            </div>
-          `;
-          container.appendChild(div);
-        });
+        emptySubtitle.textContent = searchQuery
+          ? 'Nessun risultato per questa ricerca.'
+          : 'Usa il lettore per scansionare un codice EAN o QR.';
+        createIcons();
+        return;
       }
-      lucide.createIcons();
+
+      emptyState.classList.add('hidden');
+
+      filtered.forEach(product => {
+        const card = document.createElement('article');
+        const status = getExpiryStatus(product.expiry);
+        card.className = 'bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-3 cursor-pointer active:bg-slate-50 transition-colors';
+        card.addEventListener('click', () => editProduct(product.id));
+
+        const imageHtml = product.photo
+          ? '<img src="' + product.photo + '" class="w-12 h-12 object-cover rounded-lg border border-slate-100 shrink-0" alt="">'
+          : '<div class="w-12 h-12 bg-slate-50 border border-slate-100 rounded-lg flex items-center justify-center text-slate-300 shrink-0"><i data-lucide="package" class="w-5 h-5 text-brand-500"></i></div>';
+
+        card.innerHTML = [
+          '<div class="flex items-center gap-3 min-w-0 flex-1">',
+          imageHtml,
+          '<div class="min-w-0 flex-1">',
+          '<div class="flex items-center gap-2 min-w-0">',
+          '<span class="text-xs font-bold text-slate-900 block truncate">' + escapeHtml(product.name || 'Senza nome') + '</span>',
+          '<span class="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full ' + status.badgeClass + '">' + status.label + '</span>',
+          '</div>',
+          '<p class="text-[11px] text-slate-500 truncate">' + escapeHtml(product.brand || 'Nessuna marca') + ' &bull; ' + escapeHtml(product.category || 'Dispensa') + '</p>',
+          '<p class="text-[10px] ' + status.textClass + ' font-semibold mt-0.5">Scadenza: ' + formatDate(product.expiry) + '</p>',
+          product.barcode ? '<p class="text-[10px] text-slate-400 font-mono truncate">EAN: ' + escapeHtml(product.barcode) + '</p>' : '',
+          product.notes ? '<p class="text-[10px] text-slate-400 italic truncate">Note: ' + escapeHtml(product.notes) + '</p>' : '',
+          '</div>',
+          '</div>',
+          '<div class="flex gap-1.5 shrink-0">',
+          '<button type="button" data-action="consume" class="p-2 bg-brand-50 text-brand-600 rounded-lg" aria-label="Segna consumato"><i data-lucide="check" class="w-4 h-4"></i></button>',
+          '<button type="button" data-action="throw" class="p-2 bg-red-50 text-red-600 rounded-lg" aria-label="Segna sprecato"><i data-lucide="trash-2" class="w-4 h-4"></i></button>',
+          '</div>'
+        ].join('');
+
+        card.querySelector('[data-action="consume"]').addEventListener('click', event => {
+          event.stopPropagation();
+          consumeProduct(product.id);
+        });
+
+        card.querySelector('[data-action="throw"]').addEventListener('click', event => {
+          event.stopPropagation();
+          throwProduct(product.id);
+        });
+
+        container.appendChild(card);
+      });
+
+      createIcons();
+    }
+
+    function matchesSearch(product) {
+      if (!searchQuery) return true;
+      return [
+        product.name,
+        product.brand,
+        product.barcode,
+        product.category,
+        product.notes
+      ].some(value => String(value || '').toLowerCase().includes(searchQuery));
     }
 
     function filterCategory(event, category) {
       activeCategory = category;
-      const buttons = document.querySelectorAll('.category-btn');
-      buttons.forEach(btn => {
-        btn.classList.remove('bg-brand-500', 'text-white', 'active');
-        btn.classList.add('bg-white', 'text-slate-600', 'border', 'border-slate-200');
+
+      document.querySelectorAll('.category-btn').forEach(button => {
+        button.classList.remove('bg-brand-500', 'text-white', 'active');
+        button.classList.add('bg-white', 'text-slate-600', 'border', 'border-slate-200');
       });
+
       event.currentTarget.classList.remove('bg-white', 'text-slate-600', 'border', 'border-slate-200');
       event.currentTarget.classList.add('bg-brand-500', 'text-white', 'active');
       renderProducts();
     }
 
     function consumeProduct(id) {
-      products = products.filter(p => p.id !== id);
-      consumedCount++;
-      localStorage.setItem('scanean_products', JSON.stringify(products));
-      localStorage.setItem('scanean_consumed', consumedCount);
-      updateDashboardStats();
-      renderProducts();
+      removeProduct(id, 'consumed');
     }
 
     function throwProduct(id) {
-      products = products.filter(p => p.id !== id);
-      thrownCount++;
-      localStorage.setItem('scanean_products', JSON.stringify(products));
-      localStorage.setItem('scanean_thrown', thrownCount);
-      updateDashboardStats();
-      renderProducts();
+      const product = products.find(item => item.id === id);
+      if (!product) return;
+
+      const status = getExpiryStatus(product.expiry);
+      const message = status.days < 0
+        ? 'Segnare questo prodotto come sprecato?'
+        : 'Il prodotto non risulta scaduto. Segnarlo come sprecato?';
+
+      if (confirm(message)) removeProduct(id, 'thrown');
+    }
+
+    function removeProduct(id, reason) {
+      const index = products.findIndex(product => product.id === id);
+      if (index === -1) return;
+
+      const [removed] = products.splice(index, 1);
+
+      if (reason === 'consumed') consumedCount++;
+      if (reason === 'thrown') thrownCount++;
+
+      lastRemovedAction = { product: removed, reason };
+
+      if (!persistState()) {
+        products.splice(index, 0, removed);
+        if (reason === 'consumed') consumedCount--;
+        if (reason === 'thrown') thrownCount--;
+        return;
+      }
+
+      renderAll();
+      showToast(reason === 'consumed' ? 'Segnato come consumato.' : 'Segnato come sprecato.', 'Annulla', undoLastRemove);
+    }
+
+    function undoLastRemove() {
+      if (!lastRemovedAction) return;
+
+      const exists = products.some(product => product.id === lastRemovedAction.product.id);
+      if (!exists) products.push(lastRemovedAction.product);
+
+      if (lastRemovedAction.reason === 'consumed') consumedCount = Math.max(0, consumedCount - 1);
+      if (lastRemovedAction.reason === 'thrown') thrownCount = Math.max(0, thrownCount - 1);
+
+      lastRemovedAction = null;
+      persistState();
+      renderAll();
+      showToast('Azione annullata.');
     }
 
     function updateDashboardStats() {
-      const el = document.getElementById('stat-expired');
-      if (el) el.textContent = products.length;
+      const expired = products.filter(product => getExpiryStatus(product.expiry).days < 0).length;
+      const soon = products.filter(product => {
+        const days = getExpiryStatus(product.expiry).days;
+        return days >= 0 && days <= 3;
+      }).length;
+
+      byId('stat-total-header').textContent = products.length;
+      byId('mini-total').textContent = products.length;
+      byId('mini-soon').textContent = soon;
+      byId('mini-expired').textContent = expired;
+    }
+
+    function updateCategoryCounts() {
+      const counts = {
+        all: products.length,
+        Frigorifero: 0,
+        Dispensa: 0,
+        Congelatore: 0,
+        'Casa e Farmaci': 0
+      };
+
+      products.forEach(product => {
+        if (Object.prototype.hasOwnProperty.call(counts, product.category)) {
+          counts[product.category]++;
+        }
+      });
+
+      document.querySelectorAll('[data-count]').forEach(element => {
+        const key = element.getAttribute('data-count');
+        element.textContent = counts[key] || 0;
+      });
     }
 
     function renderStats() {
-      document.getElementById('stat-consumed').textContent = consumedCount;
-      document.getElementById('stat-thrown').textContent = thrownCount;
+      const expiring = products.filter(product => {
+        const days = getExpiryStatus(product.expiry).days;
+        return days >= 0 && days <= 3;
+      }).length;
+      const totalClosed = consumedCount + thrownCount;
+      const wasteRate = totalClosed ? Math.round((thrownCount / totalClosed) * 100) : 0;
+
+      byId('stat-in-stock').textContent = products.length;
+      byId('stat-expiring').textContent = expiring;
+      byId('stat-consumed').textContent = consumedCount;
+      byId('stat-thrown').textContent = thrownCount;
+      byId('stat-waste-rate').textContent = wasteRate + '%';
     }
 
     function clearDatabase() {
-      if (confirm("Vuoi azzerare completamente la dispensa?")) {
-        products = []; consumedCount = 0; thrownCount = 0;
-        localStorage.clear();
-        updateDashboardStats(); renderProducts();
-        switchView('dashboard');
+      if (!confirm('Vuoi azzerare tutti i dati salvati da Scan Ean?')) return;
+
+      products = [];
+      consumedCount = 0;
+      thrownCount = 0;
+      lastRemovedAction = null;
+
+      Object.values(STORAGE_KEYS).forEach(key => {
+        if (key !== STORAGE_KEYS.premium) localStorage.removeItem(key);
+      });
+
+      renderAll();
+      switchView('dashboard');
+      showToast('Dati Scan Ean azzerati.');
+    }
+
+    function openScanner() {
+      resetForm();
+      switchView('scan');
+      setTimeout(startScanning, 250);
+    }
+
+    async function startScanning() {
+      if (!window.Html5Qrcode) {
+        showToast('Libreria scanner non caricata.');
+        switchView('add');
+        return;
+      }
+
+      if (scannerIsRunning) return;
+
+      try {
+        if (!html5QrScanner) html5QrScanner = new Html5Qrcode('scanner-reader');
+
+        await html5QrScanner.start(
+          { facingMode: 'environment' },
+          {
+            fps: 12,
+            qrbox: (viewfinderWidth, viewfinderHeight) => {
+              const width = Math.min(viewfinderWidth * 0.78, 260);
+              const height = Math.min(viewfinderHeight * 0.45, 150);
+              return { width, height };
+            }
+          },
+          decodedText => handleScanSuccess(decodedText),
+          () => {}
+        );
+
+        scannerIsRunning = true;
+      } catch (error) {
+        scannerIsRunning = false;
+        showToast('Fotocamera non disponibile. Usa inserimento manuale.');
+        resetForm();
+        switchView('add');
       }
     }
 
-    function startScanning() {
-      if (!html5QrScanner) html5QrScanner = new Html5Qrcode("scanner-reader");
-      html5QrScanner.start({ facingMode: "environment" }, { fps: 15, qrbox: 200 }, (decodedText) => {
-        stopScanning();
-        resetForm();
-        document.getElementById('form-barcode').value = decodedText;
-        
-        // Verifica immediata se l'EAN scansionato esiste già
-        checkExistingEan(decodedText);
-        
-        switchView('add');
-      }, () => {});
+    async function stopScanning() {
+      if (!html5QrScanner || !scannerIsRunning) return;
+
+      try {
+        await html5QrScanner.stop();
+      } catch (error) {
+      } finally {
+        scannerIsRunning = false;
+      }
     }
 
-    function stopScanning() {
-      if (html5QrScanner && html5QrScanner.isScanning) html5QrScanner.stop().catch(()=>{});
+    async function handleScanSuccess(decodedText) {
+      await stopScanning();
+      resetForm();
+      byId('form-barcode').value = decodedText;
+      const recognized = checkExistingEan(decodedText);
+      switchView('add');
+
+      if (!recognized) {
+        setTimeout(() => byId('form-name').focus(), 250);
+      }
+    }
+
+    function exportData() {
+      const payload = {
+        app: 'Scan Ean',
+        version: 2,
+        exportedAt: new Date().toISOString(),
+        products,
+        counters: {
+          consumed: consumedCount,
+          thrown: thrownCount
+        }
+      };
+
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'scan-ean-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      showToast('Backup esportato.');
+    }
+
+    function importData(event) {
+      const file = event.target.files && event.target.files[0];
+      event.target.value = '';
+      if (!file) return;
+
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        try {
+          const payload = JSON.parse(String(reader.result || '{}'));
+          const importedProducts = Array.isArray(payload.products)
+            ? payload.products.map(normalizeProduct).filter(Boolean)
+            : [];
+
+          if (!importedProducts.length && !confirm('Il file non contiene prodotti. Importarlo comunque e svuotare la dispensa?')) {
+            return;
+          }
+
+          if (!confirm('Importare questo backup? I prodotti attuali saranno sostituiti.')) {
+            return;
+          }
+
+          products = importedProducts;
+          consumedCount = Number(payload.counters && payload.counters.consumed) || 0;
+          thrownCount = Number(payload.counters && payload.counters.thrown) || 0;
+
+          if (!persistState()) return;
+
+          renderAll();
+          switchView('dashboard');
+          showToast('Backup importato.');
+        } catch (error) {
+          showToast('File backup non valido.');
+        }
+      };
+
+      reader.readAsText(file);
+    }
+
+    function getExpiryStatus(expiry) {
+      const days = daysUntil(expiry);
+
+      if (!Number.isFinite(days)) {
+        return {
+          days,
+          label: 'Senza data',
+          badgeClass: 'bg-slate-100 text-slate-500',
+          textClass: 'text-slate-500'
+        };
+      }
+
+      if (days < 0) {
+        return {
+          days,
+          label: 'Scaduto',
+          badgeClass: 'bg-red-50 text-red-600',
+          textClass: 'text-red-600'
+        };
+      }
+
+      if (days === 0) {
+        return {
+          days,
+          label: 'Oggi',
+          badgeClass: 'bg-accent-50 text-accent-800',
+          textClass: 'text-accent-800'
+        };
+      }
+
+      if (days <= 3) {
+        return {
+          days,
+          label: days + ' giorni',
+          badgeClass: 'bg-accent-50 text-accent-800',
+          textClass: 'text-accent-800'
+        };
+      }
+
+      if (days <= 7) {
+        return {
+          days,
+          label: 'Questa settimana',
+          badgeClass: 'bg-yellow-50 text-yellow-700',
+          textClass: 'text-yellow-700'
+        };
+      }
+
+      return {
+        days,
+        label: 'Ok',
+        badgeClass: 'bg-brand-50 text-brand-700',
+        textClass: 'text-brand-600'
+      };
+    }
+
+    function daysUntil(isoDate) {
+      if (!isValidDate(isoDate)) return Number.NaN;
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const target = parseLocalDate(isoDate);
+      target.setHours(0, 0, 0, 0);
+
+      return Math.round((target - today) / 86400000);
+    }
+
+    function parseLocalDate(isoDate) {
+      const parts = String(isoDate || '').split('-').map(Number);
+      return new Date(parts[0], parts[1] - 1, parts[2]);
+    }
+
+    function isValidDate(isoDate) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(String(isoDate || ''))) return false;
+      const date = parseLocalDate(isoDate);
+      return !Number.isNaN(date.getTime());
+    }
+
+    function sortByExpiry(a, b) {
+      const daysA = daysUntil(a.expiry);
+      const daysB = daysUntil(b.expiry);
+      if (!Number.isFinite(daysA)) return 1;
+      if (!Number.isFinite(daysB)) return -1;
+      return daysA - daysB;
+    }
+
+    function formatDate(isoDate) {
+      if (!isValidDate(isoDate)) return 'Non impostata';
+      return parseLocalDate(isoDate).toLocaleDateString('it-IT', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      });
+    }
+
+    function makeId() {
+      if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+      return 'p_' + Date.now() + '_' + Math.random().toString(16).slice(2);
+    }
+
+    function isSafePhoto(value) {
+      return typeof value === 'string' && /^data:image\/(png|jpeg|jpg|webp);base64,/i.test(value);
+    }
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
     }
   </script>
 </body>
