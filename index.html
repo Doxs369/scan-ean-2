@@ -7,11 +7,22 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50: '#f0fdfb', 100: '#ccfbf1', 500: '#32bfa3', 600: '#23a088', 700: '#115e50', 900: '#0d4a3e' },
+            accent: { 50: '#fff7f5', 100: '#ffeedb', 500: '#ff7c54', 600: '#e5643d', 800: '#9a3412' }
+          }
+        }
+      }
+    }
+  </script>
   <style>
     body { overscroll-behavior-y: contain; -webkit-tap-highlight-color: transparent; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    .hidden { display: none; }
   </style>
 </head>
 <body class="h-full flex flex-col font-sans select-none overflow-hidden bg-slate-50">
@@ -25,7 +36,6 @@
 
   <main class="flex-1 overflow-y-auto pb-28 px-4 pt-4 no-scrollbar">
     <section id="view-dashboard" class="space-y-4">
-      <h2 class="text-sm font-bold text-slate-600">La tua Dispensa</h2>
       <div id="products-container" class="space-y-3"></div>
     </section>
 
@@ -47,33 +57,19 @@
 
         <input type="text" id="form-name" placeholder="Nome Prodotto" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm">
         <button type="button" onclick="saveProduct()" class="w-full py-3 bg-brand-500 text-white rounded-xl text-sm font-bold">Salva</button>
-        <button type="button" onclick="switchView('dashboard')" class="w-full py-2 bg-slate-100 text-slate-600 rounded-xl text-sm font-bold">Annulla</button>
       </div>
     </section>
   </main>
-
-  <nav class="bg-white fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 flex items-center justify-around py-3 px-6">
-    <button onclick="switchView('dashboard')" class="text-brand-500"><i data-lucide="layout-grid"></i></button>
-    <button onclick="switchView('add')" class="bg-brand-500 text-white p-4 rounded-full -translate-y-4"><i data-lucide="plus"></i></button>
-  </nav>
 
   <script>
     // Caricamento categorie e forzatura vista dashboard
     window.addEventListener('DOMContentLoaded', () => {
       loadCustomCategories();
-      switchView('dashboard'); 
-      lucide.createIcons();
+      switchView('dashboard'); // Forza sempre la dashboard all'avvio
+      renderProducts();
+      updateDashboardStats();
     });
 
-    function switchView(viewId) {
-      document.getElementById('view-dashboard').classList.add('hidden');
-      document.getElementById('view-add').classList.add('hidden');
-      
-      const active = document.getElementById('view-' + viewId);
-      if (active) active.classList.remove('hidden');
-    }
-
-    // Funzione per caricare le categorie dal salvataggio
     function loadCustomCategories() {
       const select = document.getElementById('form-category');
       const cats = JSON.parse(localStorage.getItem('scanean_custom_categories')) || [];
@@ -84,7 +80,6 @@
       });
     }
 
-    // Funzione per aggiungere nuova categoria tramite prompt
     function addNewCategoryUI() {
       const name = prompt("Inserisci nome nuova posizione:");
       if (name && name.trim()) {
@@ -100,8 +95,14 @@
       }
     }
 
+    function switchView(viewId) {
+      document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
+      const active = document.getElementById('view-' + viewId);
+      if (active) active.classList.remove('hidden');
+    }
+
     function saveProduct() {
-      alert("Prodotto salvato in: " + document.getElementById('form-category').value);
+      alert("Prodotto salvato!");
       switchView('dashboard');
     }
   </script>
