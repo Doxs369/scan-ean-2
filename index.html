@@ -18,19 +18,19 @@
               500: '#32bfa3',
               600: '#23a088',
               700: '#115e50',
-              900: '#0d4a3e',
+              900: '#0d4a3e'
             },
             accent: {
               50: '#fff7f5',
               100: '#ffeedb',
               500: '#ff7c54',
               600: '#e5643d',
-              800: '#9a3412',
+              800: '#9a3412'
             }
           }
         }
       }
-    }
+    };
   </script>
   <style>
     body {
@@ -53,7 +53,7 @@
 
   <div id="ad-banner" class="bg-gradient-to-r from-accent-50 via-white to-accent-50 py-1.5 px-4 text-center text-xs border-b border-accent-100 flex items-center justify-between z-50 shrink-0">
     <span class="text-accent-800 font-medium truncate">Sponsor: risparmia il 20% sulla spesa con il codice SCANEAN20</span>
-    <button onclick="openPaypalModal()" class="bg-accent-500 text-white text-[10px] font-bold px-2 py-1 rounded hover:bg-accent-600 transition shadow-sm shrink-0">
+    <button onclick="openPremiumModal()" class="bg-accent-500 text-white text-[10px] font-bold px-2 py-1 rounded hover:bg-accent-600 transition shadow-sm shrink-0">
       Rimuovi Ads (1.99 EUR)
     </button>
   </div>
@@ -101,23 +101,7 @@
         <input type="search" id="search-input" placeholder="Cerca per nome, marca o codice..." class="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 text-slate-800 placeholder-slate-400 shadow-sm">
       </div>
 
-      <div class="flex gap-2 overflow-x-auto no-scrollbar py-1">
-        <button data-category="all" onclick="filterCategory(event, 'all')" class="category-btn active px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all bg-brand-500 text-white shadow-sm">
-          Tutti <span data-count="all" class="opacity-80">0</span>
-        </button>
-        <button data-category="Frigorifero" onclick="filterCategory(event, 'Frigorifero')" class="category-btn px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all bg-white text-slate-600 border border-slate-200 hover:border-slate-300 shadow-sm">
-          Frigorifero <span data-count="Frigorifero" class="opacity-70">0</span>
-        </button>
-        <button data-category="Dispensa" onclick="filterCategory(event, 'Dispensa')" class="category-btn px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all bg-white text-slate-600 border border-slate-200 hover:border-slate-300 shadow-sm">
-          Dispensa <span data-count="Dispensa" class="opacity-70">0</span>
-        </button>
-        <button data-category="Congelatore" onclick="filterCategory(event, 'Congelatore')" class="category-btn px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all bg-white text-slate-600 border border-slate-200 hover:border-slate-300 shadow-sm">
-          Congelatore <span data-count="Congelatore" class="opacity-70">0</span>
-        </button>
-        <button data-category="Casa e Farmaci" onclick="filterCategory(event, 'Casa e Farmaci')" class="category-btn px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all bg-white text-slate-600 border border-slate-200 hover:border-slate-300 shadow-sm">
-          Casa e Farmaci <span data-count="Casa e Farmaci" class="opacity-70">0</span>
-        </button>
-      </div>
+      <div id="category-tabs" class="flex gap-2 overflow-x-auto no-scrollbar py-1"></div>
 
       <div id="products-container" class="space-y-3"></div>
 
@@ -189,18 +173,20 @@
             <label for="form-name" class="text-xs font-bold text-slate-500">Nome prodotto *</label>
             <input type="text" id="form-name" placeholder="Nome del prodotto" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-brand-500">
           </div>
+
           <div class="space-y-1.5">
             <label for="form-brand" class="text-xs font-bold text-slate-500">Marca</label>
             <input type="text" id="form-brand" placeholder="Es. Barilla" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-brand-500">
           </div>
+
           <div class="space-y-1.5">
-            <label for="form-category" class="text-xs font-bold text-slate-500">Posizione</label>
-            <select id="form-category" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-brand-500">
-              <option value="Frigorifero">Frigorifero</option>
-              <option value="Dispensa" selected>Dispensa</option>
-              <option value="Congelatore">Congelatore</option>
-              <option value="Casa e Farmaci">Casa e Farmaci</option>
-            </select>
+            <div class="flex items-center justify-between gap-2">
+              <label for="form-category" class="text-xs font-bold text-slate-500">Posizione</label>
+              <button type="button" onclick="openCategoryModal()" title="Aggiungi categoria" class="w-7 h-7 bg-brand-50 border border-brand-100 text-brand-600 rounded-lg flex items-center justify-center active:bg-brand-100">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+              </button>
+            </div>
+            <select id="form-category" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-brand-500"></select>
           </div>
         </div>
 
@@ -295,6 +281,27 @@
     <button id="toast-action" class="hidden text-brand-100 font-bold underline underline-offset-2">Annulla</button>
   </div>
 
+  <div id="category-modal" class="hidden fixed inset-0 z-[60] bg-slate-900/50 px-4 flex items-center justify-center">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-xl p-5 w-full max-w-sm space-y-4">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h3 class="text-base font-bold text-slate-900">Nuova categoria</h3>
+          <p class="text-xs text-slate-500 mt-1">Aggiungi una posizione personalizzata alla dispensa.</p>
+        </div>
+        <button onclick="closeCategoryModal()" class="p-2 bg-slate-50 rounded-lg text-slate-500">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <input type="text" id="new-category-name" maxlength="28" onkeydown="handleCategoryEnter(event)" placeholder="Es. Cantina, Bagno, Ufficio..." class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-brand-500">
+      <div class="flex gap-3">
+        <button onclick="closeCategoryModal()" class="flex-1 py-3 bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold">Annulla</button>
+        <button onclick="addCategory()" class="flex-1 py-3 bg-brand-500 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2">
+          <i data-lucide="plus" class="w-4 h-4"></i> Crea
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div id="premium-modal" class="hidden fixed inset-0 z-[60] bg-slate-900/50 px-4 flex items-center justify-center">
     <div class="bg-white rounded-2xl border border-slate-200 shadow-xl p-5 w-full max-w-sm space-y-4">
       <div class="flex items-start justify-between gap-3">
@@ -320,10 +327,14 @@
       products: 'scanean_products',
       consumed: 'scanean_consumed',
       thrown: 'scanean_thrown',
-      premium: 'scanean_premium'
+      premium: 'scanean_premium',
+      categories: 'scanean_categories'
     };
 
+    const DEFAULT_CATEGORIES = ['Frigorifero', 'Dispensa', 'Congelatore', 'Casa e Farmaci'];
+
     let products = readProducts();
+    let categories = readCategories(products);
     let consumedCount = readNumber(STORAGE_KEYS.consumed);
     let thrownCount = readNumber(STORAGE_KEYS.thrown);
     let premiumEnabled = localStorage.getItem(STORAGE_KEYS.premium) === 'true';
@@ -339,15 +350,12 @@
     document.addEventListener('DOMContentLoaded', initApp);
 
     function initApp() {
-      const searchInput = byId('search-input');
-      const importInput = byId('import-file');
-
-      searchInput.addEventListener('input', () => {
-        searchQuery = searchInput.value.trim().toLowerCase();
+      byId('search-input').addEventListener('input', function () {
+        searchQuery = this.value.trim().toLowerCase();
         renderProducts();
       });
 
-      importInput.addEventListener('change', importData);
+      byId('import-file').addEventListener('change', importData);
 
       applyPremiumState();
       renderAll();
@@ -371,6 +379,21 @@
       }
     }
 
+    function readCategories(productList) {
+      let saved = [];
+      try {
+        saved = JSON.parse(localStorage.getItem(STORAGE_KEYS.categories) || '[]');
+      } catch (error) {
+        saved = [];
+      }
+
+      const productCategories = Array.isArray(productList) ? productList.map(function (product) {
+        return product.category;
+      }) : [];
+
+      return normalizeCategoryList(DEFAULT_CATEGORIES.concat(Array.isArray(saved) ? saved : []).concat(productCategories));
+    }
+
     function readNumber(key) {
       const value = Number.parseInt(localStorage.getItem(key) || '0', 10);
       return Number.isFinite(value) ? value : 0;
@@ -378,12 +401,13 @@
 
     function normalizeProduct(product) {
       if (!product || typeof product !== 'object') return null;
+
       return {
         id: String(product.id || makeId()),
         name: String(product.name || '').trim(),
         barcode: String(product.barcode || '').trim(),
         brand: String(product.brand || '').trim(),
-        category: product.category || 'Dispensa',
+        category: normalizeCategoryName(product.category) || 'Dispensa',
         expiry: String(product.expiry || '').trim(),
         notes: String(product.notes || '').trim(),
         photo: isSafePhoto(product.photo) ? product.photo : '',
@@ -397,6 +421,7 @@
         localStorage.setItem(STORAGE_KEYS.products, JSON.stringify(products));
         localStorage.setItem(STORAGE_KEYS.consumed, String(consumedCount));
         localStorage.setItem(STORAGE_KEYS.thrown, String(thrownCount));
+        localStorage.setItem(STORAGE_KEYS.categories, JSON.stringify(categories));
         return true;
       } catch (error) {
         showToast('Memoria piena: elimina foto o prodotti vecchi.');
@@ -405,14 +430,18 @@
     }
 
     function renderAll() {
+      syncCategoriesFromProducts();
+      renderCategoryTabs();
+      renderCategoryOptions();
       updateDashboardStats();
       updateCategoryCounts();
       renderProducts();
       renderStats();
+      createIcons();
     }
 
     function switchView(viewId) {
-      ['dashboard', 'scan', 'add', 'stats'].forEach(view => {
+      ['dashboard', 'scan', 'add', 'stats'].forEach(function (view) {
         const viewEl = byId('view-' + view);
         if (viewEl) viewEl.classList.add('hidden');
 
@@ -450,7 +479,7 @@
       if (actionLabel && typeof actionCallback === 'function') {
         toastAction.textContent = actionLabel;
         toastAction.classList.remove('hidden');
-        toastAction.onclick = () => {
+        toastAction.onclick = function () {
           actionCallback();
           hideToast();
         };
@@ -463,11 +492,10 @@
     }
 
     function hideToast() {
-      const toast = byId('toast');
-      toast.classList.add('opacity-0', 'pointer-events-none');
+      byId('toast').classList.add('opacity-0', 'pointer-events-none');
     }
 
-    function openPaypalModal() {
+    function openPremiumModal() {
       byId('premium-modal').classList.remove('hidden');
       createIcons();
     }
@@ -499,26 +527,170 @@
       }
     }
 
+    function normalizeCategoryName(value) {
+      return String(value || '').replace(/\s+/g, ' ').trim().slice(0, 28);
+    }
+
+    function normalizeCategoryList(values) {
+      const list = [];
+      const seen = new Set();
+
+      values.forEach(function (value) {
+        const name = normalizeCategoryName(value);
+        const key = name.toLowerCase();
+        if (name && !seen.has(key)) {
+          seen.add(key);
+          list.push(name);
+        }
+      });
+
+      return list.length ? list : DEFAULT_CATEGORIES.slice();
+    }
+
+    function syncCategoriesFromProducts() {
+      categories = normalizeCategoryList(DEFAULT_CATEGORIES.concat(categories).concat(products.map(function (product) {
+        return product.category;
+      })));
+      localStorage.setItem(STORAGE_KEYS.categories, JSON.stringify(categories));
+    }
+
+    function ensureCategory(name) {
+      const normalized = normalizeCategoryName(name) || 'Dispensa';
+      const existing = categories.find(function (category) {
+        return category.toLowerCase() === normalized.toLowerCase();
+      });
+
+      if (existing) return existing;
+
+      categories.push(normalized);
+      persistState();
+      return normalized;
+    }
+
+    function renderCategoryTabs() {
+      const tabs = byId('category-tabs');
+      tabs.innerHTML = '';
+
+      if (activeCategory !== 'all' && !categories.includes(activeCategory)) {
+        activeCategory = 'all';
+      }
+
+      [{ label: 'Tutti', value: 'all' }].concat(categories.map(function (category) {
+        return { label: category, value: category };
+      })).forEach(function (item) {
+        const button = document.createElement('button');
+        const active = item.value === activeCategory;
+
+        button.type = 'button';
+        button.className = active
+          ? 'category-btn active px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all bg-brand-500 text-white shadow-sm'
+          : 'category-btn px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all bg-white text-slate-600 border border-slate-200 hover:border-slate-300 shadow-sm';
+        button.onclick = function (event) {
+          filterCategory(event, item.value);
+        };
+
+        const label = document.createElement('span');
+        label.textContent = item.label + ' ';
+
+        const count = document.createElement('span');
+        count.dataset.count = item.value;
+        count.className = active ? 'opacity-80' : 'opacity-70';
+        count.textContent = '0';
+
+        button.appendChild(label);
+        button.appendChild(count);
+        tabs.appendChild(button);
+      });
+    }
+
+    function renderCategoryOptions(selectedValue) {
+      const select = byId('form-category');
+      if (!select) return;
+
+      const previousValue = selectedValue || select.value || 'Dispensa';
+      select.innerHTML = '';
+
+      categories.forEach(function (category) {
+        const option = document.createElement('option');
+        option.value = category;
+        option.textContent = category;
+        select.appendChild(option);
+      });
+
+      select.value = categories.includes(previousValue) ? previousValue : 'Dispensa';
+    }
+
+    function openCategoryModal() {
+      byId('category-modal').classList.remove('hidden');
+      byId('new-category-name').value = '';
+      setTimeout(function () {
+        byId('new-category-name').focus();
+      }, 50);
+      createIcons();
+    }
+
+    function closeCategoryModal() {
+      byId('category-modal').classList.add('hidden');
+    }
+
+    function handleCategoryEnter(event) {
+      if (event.key === 'Enter') addCategory();
+    }
+
+    function addCategory() {
+      const input = byId('new-category-name');
+      const name = normalizeCategoryName(input.value);
+
+      if (!name) {
+        showToast('Scrivi il nome della categoria.');
+        return;
+      }
+
+      const existing = categories.find(function (category) {
+        return category.toLowerCase() === name.toLowerCase();
+      });
+
+      const categoryName = existing || name;
+      if (!existing) {
+        categories.push(name);
+        persistState();
+      }
+
+      renderCategoryTabs();
+      renderCategoryOptions(categoryName);
+      updateCategoryCounts();
+      byId('form-category').value = categoryName;
+      closeCategoryModal();
+      showToast(existing ? 'Categoria gia presente.' : 'Categoria creata.');
+      createIcons();
+    }
+
     function checkExistingEan(barcodeText) {
       const productId = byId('form-product-id').value;
       const barcode = String(barcodeText || '').trim();
       if (!barcode || productId) return false;
 
       const existingProduct = products
-        .filter(product => product.barcode && product.barcode === barcode)
-        .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0];
+        .filter(function (product) {
+          return product.barcode && product.barcode === barcode;
+        })
+        .sort(function (a, b) {
+          return new Date(b.updatedAt) - new Date(a.updatedAt);
+        })[0];
 
       if (!existingProduct) return false;
 
       byId('form-name').value = existingProduct.name || '';
       byId('form-brand').value = existingProduct.brand || '';
-      byId('form-category').value = existingProduct.category || 'Dispensa';
       byId('form-notes').value = existingProduct.notes || '';
+      renderCategoryOptions(ensureCategory(existingProduct.category || 'Dispensa'));
 
       if (existingProduct.photo) setPhotoPreview(existingProduct.photo);
 
       showToast('Prodotto riconosciuto: inserisci la nuova scadenza.');
-      setTimeout(() => byId('form-expiry').focus(), 250);
+      setTimeout(function () {
+        byId('form-expiry').focus();
+      }, 250);
       return true;
     }
 
@@ -583,7 +755,9 @@
 
     function stopCamera() {
       if (cameraStream) {
-        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream.getTracks().forEach(function (track) {
+          track.stop();
+        });
         cameraStream = null;
       }
 
@@ -617,7 +791,7 @@
       byId('form-name').value = '';
       byId('form-barcode').value = '';
       byId('form-brand').value = '';
-      byId('form-category').value = 'Dispensa';
+      renderCategoryOptions('Dispensa');
       byId('form-expiry').value = '';
       byId('form-notes').value = '';
       resetPhotoUI();
@@ -626,7 +800,9 @@
     }
 
     function editProduct(id) {
-      const product = products.find(item => item.id === id);
+      const product = products.find(function (item) {
+        return item.id === id;
+      });
       if (!product) return;
 
       resetForm();
@@ -634,7 +810,7 @@
       byId('form-name').value = product.name || '';
       byId('form-barcode').value = product.barcode || '';
       byId('form-brand').value = product.brand || '';
-      byId('form-category').value = product.category || 'Dispensa';
+      renderCategoryOptions(ensureCategory(product.category || 'Dispensa'));
       byId('form-expiry').value = product.expiry || '';
       byId('form-notes').value = product.notes || '';
 
@@ -650,7 +826,7 @@
       const name = byId('form-name').value.trim();
       const barcode = byId('form-barcode').value.trim();
       const brand = byId('form-brand').value.trim();
-      const category = byId('form-category').value;
+      const category = ensureCategory(byId('form-category').value);
       const expiry = byId('form-expiry').value;
       const notes = byId('form-notes').value.trim();
       const photo = byId('form-photo').value;
@@ -665,12 +841,9 @@
         return;
       }
 
-      const sameBarcodeAndDate = products.some(product =>
-        product.id !== productId &&
-        product.barcode &&
-        product.barcode === barcode &&
-        product.expiry === expiry
-      );
+      const sameBarcodeAndDate = products.some(function (product) {
+        return product.id !== productId && product.barcode && product.barcode === barcode && product.expiry === expiry;
+      });
 
       if (barcode && sameBarcodeAndDate && !confirm('Esiste gia un prodotto con lo stesso codice e la stessa scadenza. Vuoi salvarlo comunque?')) {
         return;
@@ -679,7 +852,10 @@
       const now = new Date().toISOString();
 
       if (productId) {
-        const index = products.findIndex(product => product.id === productId);
+        const index = products.findIndex(function (product) {
+          return product.id === productId;
+        });
+
         if (index !== -1) {
           products[index] = {
             ...products[index],
@@ -724,26 +900,28 @@
       container.innerHTML = '';
 
       const filtered = products
-        .filter(product => activeCategory === 'all' || product.category === activeCategory)
+        .filter(function (product) {
+          return activeCategory === 'all' || product.category === activeCategory;
+        })
         .filter(matchesSearch)
         .sort(sortByExpiry);
 
       if (filtered.length === 0) {
         emptyState.classList.remove('hidden');
-        emptySubtitle.textContent = searchQuery
-          ? 'Nessun risultato per questa ricerca.'
-          : 'Usa il lettore per scansionare un codice EAN o QR.';
+        emptySubtitle.textContent = searchQuery ? 'Nessun risultato per questa ricerca.' : 'Usa il lettore per scansionare un codice EAN o QR.';
         createIcons();
         return;
       }
 
       emptyState.classList.add('hidden');
 
-      filtered.forEach(product => {
+      filtered.forEach(function (product) {
         const card = document.createElement('article');
         const status = getExpiryStatus(product.expiry);
         card.className = 'bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-3 cursor-pointer active:bg-slate-50 transition-colors';
-        card.addEventListener('click', () => editProduct(product.id));
+        card.addEventListener('click', function () {
+          editProduct(product.id);
+        });
 
         const imageHtml = product.photo
           ? '<img src="' + product.photo + '" class="w-12 h-12 object-cover rounded-lg border border-slate-100 shrink-0" alt="">'
@@ -769,12 +947,12 @@
           '</div>'
         ].join('');
 
-        card.querySelector('[data-action="consume"]').addEventListener('click', event => {
+        card.querySelector('[data-action="consume"]').addEventListener('click', function (event) {
           event.stopPropagation();
           consumeProduct(product.id);
         });
 
-        card.querySelector('[data-action="throw"]').addEventListener('click', event => {
+        card.querySelector('[data-action="throw"]').addEventListener('click', function (event) {
           event.stopPropagation();
           throwProduct(product.id);
         });
@@ -787,26 +965,17 @@
 
     function matchesSearch(product) {
       if (!searchQuery) return true;
-      return [
-        product.name,
-        product.brand,
-        product.barcode,
-        product.category,
-        product.notes
-      ].some(value => String(value || '').toLowerCase().includes(searchQuery));
+      return [product.name, product.brand, product.barcode, product.category, product.notes].some(function (value) {
+        return String(value || '').toLowerCase().includes(searchQuery);
+      });
     }
 
     function filterCategory(event, category) {
       activeCategory = category;
-
-      document.querySelectorAll('.category-btn').forEach(button => {
-        button.classList.remove('bg-brand-500', 'text-white', 'active');
-        button.classList.add('bg-white', 'text-slate-600', 'border', 'border-slate-200');
-      });
-
-      event.currentTarget.classList.remove('bg-white', 'text-slate-600', 'border', 'border-slate-200');
-      event.currentTarget.classList.add('bg-brand-500', 'text-white', 'active');
+      renderCategoryTabs();
+      updateCategoryCounts();
       renderProducts();
+      createIcons();
     }
 
     function consumeProduct(id) {
@@ -814,7 +983,9 @@
     }
 
     function throwProduct(id) {
-      const product = products.find(item => item.id === id);
+      const product = products.find(function (item) {
+        return item.id === id;
+      });
       if (!product) return;
 
       const status = getExpiryStatus(product.expiry);
@@ -826,15 +997,17 @@
     }
 
     function removeProduct(id, reason) {
-      const index = products.findIndex(product => product.id === id);
+      const index = products.findIndex(function (product) {
+        return product.id === id;
+      });
       if (index === -1) return;
 
-      const [removed] = products.splice(index, 1);
+      const removed = products.splice(index, 1)[0];
 
       if (reason === 'consumed') consumedCount++;
       if (reason === 'thrown') thrownCount++;
 
-      lastRemovedAction = { product: removed, reason };
+      lastRemovedAction = { product: removed, reason: reason };
 
       if (!persistState()) {
         products.splice(index, 0, removed);
@@ -850,7 +1023,9 @@
     function undoLastRemove() {
       if (!lastRemovedAction) return;
 
-      const exists = products.some(product => product.id === lastRemovedAction.product.id);
+      const exists = products.some(function (product) {
+        return product.id === lastRemovedAction.product.id;
+      });
       if (!exists) products.push(lastRemovedAction.product);
 
       if (lastRemovedAction.reason === 'consumed') consumedCount = Math.max(0, consumedCount - 1);
@@ -863,8 +1038,11 @@
     }
 
     function updateDashboardStats() {
-      const expired = products.filter(product => getExpiryStatus(product.expiry).days < 0).length;
-      const soon = products.filter(product => {
+      const expired = products.filter(function (product) {
+        return getExpiryStatus(product.expiry).days < 0;
+      }).length;
+
+      const soon = products.filter(function (product) {
         const days = getExpiryStatus(product.expiry).days;
         return days >= 0 && days <= 3;
       }).length;
@@ -876,31 +1054,29 @@
     }
 
     function updateCategoryCounts() {
-      const counts = {
-        all: products.length,
-        Frigorifero: 0,
-        Dispensa: 0,
-        Congelatore: 0,
-        'Casa e Farmaci': 0
-      };
+      const counts = { all: products.length };
 
-      products.forEach(product => {
-        if (Object.prototype.hasOwnProperty.call(counts, product.category)) {
-          counts[product.category]++;
-        }
+      categories.forEach(function (category) {
+        counts[category] = 0;
       });
 
-      document.querySelectorAll('[data-count]').forEach(element => {
-        const key = element.getAttribute('data-count');
+      products.forEach(function (product) {
+        const category = product.category || 'Dispensa';
+        counts[category] = (counts[category] || 0) + 1;
+      });
+
+      document.querySelectorAll('[data-count]').forEach(function (element) {
+        const key = element.dataset.count;
         element.textContent = counts[key] || 0;
       });
     }
 
     function renderStats() {
-      const expiring = products.filter(product => {
+      const expiring = products.filter(function (product) {
         const days = getExpiryStatus(product.expiry).days;
         return days >= 0 && days <= 3;
       }).length;
+
       const totalClosed = consumedCount + thrownCount;
       const wasteRate = totalClosed ? Math.round((thrownCount / totalClosed) * 100) : 0;
 
@@ -915,14 +1091,16 @@
       if (!confirm('Vuoi azzerare tutti i dati salvati da Scan Ean?')) return;
 
       products = [];
+      categories = DEFAULT_CATEGORIES.slice();
       consumedCount = 0;
       thrownCount = 0;
       lastRemovedAction = null;
 
-      Object.values(STORAGE_KEYS).forEach(key => {
+      Object.values(STORAGE_KEYS).forEach(function (key) {
         if (key !== STORAGE_KEYS.premium) localStorage.removeItem(key);
       });
 
+      persistState();
       renderAll();
       switchView('dashboard');
       showToast('Dati Scan Ean azzerati.');
@@ -950,14 +1128,16 @@
           { facingMode: 'environment' },
           {
             fps: 12,
-            qrbox: (viewfinderWidth, viewfinderHeight) => {
+            qrbox: function (viewfinderWidth, viewfinderHeight) {
               const width = Math.min(viewfinderWidth * 0.78, 260);
               const height = Math.min(viewfinderHeight * 0.45, 150);
-              return { width, height };
+              return { width: width, height: height };
             }
           },
-          decodedText => handleScanSuccess(decodedText),
-          () => {}
+          function (decodedText) {
+            handleScanSuccess(decodedText);
+          },
+          function () {}
         );
 
         scannerIsRunning = true;
@@ -983,191 +1163,4 @@
     async function handleScanSuccess(decodedText) {
       await stopScanning();
       resetForm();
-      byId('form-barcode').value = decodedText;
-      const recognized = checkExistingEan(decodedText);
-      switchView('add');
-
-      if (!recognized) {
-        setTimeout(() => byId('form-name').focus(), 250);
-      }
-    }
-
-    function exportData() {
-      const payload = {
-        app: 'Scan Ean',
-        version: 2,
-        exportedAt: new Date().toISOString(),
-        products,
-        counters: {
-          consumed: consumedCount,
-          thrown: thrownCount
-        }
-      };
-
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'scan-ean-backup-' + new Date().toISOString().slice(0, 10) + '.json';
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-      showToast('Backup esportato.');
-    }
-
-    function importData(event) {
-      const file = event.target.files && event.target.files[0];
-      event.target.value = '';
-      if (!file) return;
-
-      const reader = new FileReader();
-
-      reader.onload = () => {
-        try {
-          const payload = JSON.parse(String(reader.result || '{}'));
-          const importedProducts = Array.isArray(payload.products)
-            ? payload.products.map(normalizeProduct).filter(Boolean)
-            : [];
-
-          if (!importedProducts.length && !confirm('Il file non contiene prodotti. Importarlo comunque e svuotare la dispensa?')) {
-            return;
-          }
-
-          if (!confirm('Importare questo backup? I prodotti attuali saranno sostituiti.')) {
-            return;
-          }
-
-          products = importedProducts;
-          consumedCount = Number(payload.counters && payload.counters.consumed) || 0;
-          thrownCount = Number(payload.counters && payload.counters.thrown) || 0;
-
-          if (!persistState()) return;
-
-          renderAll();
-          switchView('dashboard');
-          showToast('Backup importato.');
-        } catch (error) {
-          showToast('File backup non valido.');
-        }
-      };
-
-      reader.readAsText(file);
-    }
-
-    function getExpiryStatus(expiry) {
-      const days = daysUntil(expiry);
-
-      if (!Number.isFinite(days)) {
-        return {
-          days,
-          label: 'Senza data',
-          badgeClass: 'bg-slate-100 text-slate-500',
-          textClass: 'text-slate-500'
-        };
-      }
-
-      if (days < 0) {
-        return {
-          days,
-          label: 'Scaduto',
-          badgeClass: 'bg-red-50 text-red-600',
-          textClass: 'text-red-600'
-        };
-      }
-
-      if (days === 0) {
-        return {
-          days,
-          label: 'Oggi',
-          badgeClass: 'bg-accent-50 text-accent-800',
-          textClass: 'text-accent-800'
-        };
-      }
-
-      if (days <= 3) {
-        return {
-          days,
-          label: days + ' giorni',
-          badgeClass: 'bg-accent-50 text-accent-800',
-          textClass: 'text-accent-800'
-        };
-      }
-
-      if (days <= 7) {
-        return {
-          days,
-          label: 'Questa settimana',
-          badgeClass: 'bg-yellow-50 text-yellow-700',
-          textClass: 'text-yellow-700'
-        };
-      }
-
-      return {
-        days,
-        label: 'Ok',
-        badgeClass: 'bg-brand-50 text-brand-700',
-        textClass: 'text-brand-600'
-      };
-    }
-
-    function daysUntil(isoDate) {
-      if (!isValidDate(isoDate)) return Number.NaN;
-
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      const target = parseLocalDate(isoDate);
-      target.setHours(0, 0, 0, 0);
-
-      return Math.round((target - today) / 86400000);
-    }
-
-    function parseLocalDate(isoDate) {
-      const parts = String(isoDate || '').split('-').map(Number);
-      return new Date(parts[0], parts[1] - 1, parts[2]);
-    }
-
-    function isValidDate(isoDate) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(String(isoDate || ''))) return false;
-      const date = parseLocalDate(isoDate);
-      return !Number.isNaN(date.getTime());
-    }
-
-    function sortByExpiry(a, b) {
-      const daysA = daysUntil(a.expiry);
-      const daysB = daysUntil(b.expiry);
-      if (!Number.isFinite(daysA)) return 1;
-      if (!Number.isFinite(daysB)) return -1;
-      return daysA - daysB;
-    }
-
-    function formatDate(isoDate) {
-      if (!isValidDate(isoDate)) return 'Non impostata';
-      return parseLocalDate(isoDate).toLocaleDateString('it-IT', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric'
-      });
-    }
-
-    function makeId() {
-      if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
-      return 'p_' + Date.now() + '_' + Math.random().toString(16).slice(2);
-    }
-
-    function isSafePhoto(value) {
-      return typeof value === 'string' && /^data:image\/(png|jpeg|jpg|webp);base64,/i.test(value);
-    }
-
-    function escapeHtml(value) {
-      return String(value || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    }
-  </script>
-</body>
-</html>
+      byI
