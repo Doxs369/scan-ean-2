@@ -1,89 +1,101 @@
 <!DOCTYPE html>
-<html lang="it" class="h-full bg-slate-50 text-slate-800">
+<html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Scan Ean - Pro</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="https://unpkg.com/html5-qrcode"></script>
-  <script>
-    tailwind.config = { theme: { extend: { colors: { brand: { 50: '#f0fdfb', 500: '#32bfa3', 600: '#23a088' }, accent: { 500: '#ff7c54', 800: '#9a3412' } } } } }
-  </script>
-  <style>
-    body { overscroll-behavior-y: contain; -webkit-tap-highlight-color: transparent; }
-    .no-scrollbar::-webkit-scrollbar { display: none; }
-    .expiry-alert { border-color: #f97316 !important; background-color: #fff7ed; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Scan Ean</title>
+    <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
+    <style>
+        :root {
+            --bg: #f0fdfb;
+            --sec: #ccfbf1;
+            --main: #32bfa3;
+            --btn-sec: #23a088;
+            --text: #115e50;
+            --emph: #0d4a3e;
+            --action: #ff7c54;
+            --action-dark: #e5643d;
+            --alert: #9a3412;
+        }
+        * { box-sizing: border-box; font-family: sans-serif; }
+        body { background: var(--bg); color: var(--text); margin: 0; padding: 20px; padding-bottom: 80px; }
+        .card { background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 15px; }
+        button { background: var(--main); color: white; border: none; padding: 15px; border-radius: 10px; width: 100%; font-weight: bold; margin-bottom: 10px; }
+        .secondary { background: var(--btn-sec); }
+        .action { background: var(--action); }
+        input, select { width: 100%; padding: 12px; margin: 5px 0; border: 1px solid var(--sec); border-radius: 8px; }
+        #scanner-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; display: none; z-index: 1000; }
+        #video { width: 100%; height: 100%; object-fit: cover; }
+        .nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 15px; border-top: 1px solid var(--sec); }
+        .banner { background: #eee; padding: 20px; text-align: center; border-radius: 10px; margin: 10px 0; border: 2px dashed #ccc; }
+    </style>
 </head>
-<body class="h-full flex flex-col font-sans select-none overflow-hidden bg-slate-50">
+<body>
 
-  <header class="bg-white sticky top-0 z-40 px-4 py-3 flex items-center justify-between border-b border-slate-100 shadow-sm">
-    <div class="flex items-center gap-2">
-      <div class="p-1.5 bg-brand-100 text-brand-600 rounded-lg"><i data-lucide="scan" class="w-6 h-6"></i></div>
-      <div>
-        <h1 class="text-lg font-bold text-slate-900">Scan Ean</h1>
-        <p class="text-[10px] text-slate-500 font-medium">Gestione intelligente</p>
-      </div>
-    </div>
-  </header>
+    <header><h1>Scan Ean</h1></header>
 
-  <main class="flex-1 overflow-y-auto pb-28 px-4 pt-4 no-scrollbar">
-    <section id="view-dashboard" class="space-y-4">
-      <div id="products-container" class="space-y-3"></div>
-      <div id="empty-state" class="hidden text-center py-16"><p class="text-sm text-slate-500">Nessun prodotto</p></div>
-    </section>
-  </main>
-
-  <nav class="bg-white fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 flex items-center justify-around py-3 px-6 shadow-sm">
-    <button onclick="renderProducts()" class="flex flex-col items-center gap-1 text-brand-500">
-      <i data-lucide="layout-grid" class="w-5 h-5"></i>
-      <span class="text-[9px] font-bold">Dispensa</span>
-    </button>
-  </nav>
-
-  <script>
-    let products = JSON.parse(localStorage.getItem('scanean_products')) || [];
-
-    function isExpiringSoon(dateStr) {
-      const expiry = new Date(dateStr);
-      const today = new Date();
-      const diffTime = expiry - today;
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      return diffDays <= 3 && diffDays >= 0;
-    }
-
-    function renderProducts() {
-      const container = document.getElementById('products-container');
-      container.innerHTML = '';
-      
-      // Ordinamento: Data più vicina per prima
-      const sortedProducts = [...products].sort((a, b) => new Date(a.expiry) - new Date(b.expiry));
-
-      sortedProducts.forEach(p => {
-        const expiring = isExpiringSoon(p.expiry);
-        const div = document.createElement('div');
-        div.className = `bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-3 ${expiring ? 'expiry-alert' : ''}`;
+    <div id="app">
+        <button onclick="openScanner()">📸 Apri Fotocamera</button>
         
-        div.innerHTML = `
-          <div class="flex-1 min-w-0">
-            <span class="text-sm font-bold block truncate">${p.name} ${expiring ? '<i data-lucide="alert-triangle" class="inline w-3 h-3 text-orange-500"></i>' : ''}</span>
-            <p class="text-[10px] text-brand-600 font-bold">Scadenza: ${p.expiry}</p>
-          </div>
-          <button onclick="consumeProduct('${p.id}')" class="p-2 bg-brand-50 text-brand-600 rounded-lg"><i data-lucide="check" class="w-4 h-4"></i></button>
-        `;
-        container.appendChild(div);
-      });
-      lucide.createIcons();
-    }
+        <div id="dashboard">
+            <div class="card">
+                <h3>Statistiche</h3>
+                <p id="stats">Prodotti: 0 | Scaduti: 0</p>
+            </div>
+            <div class="banner">BANNER PUBBLICITARIO</div>
+        </div>
 
-    function consumeProduct(id) {
-      products = products.filter(p => p.id !== id);
-      localStorage.setItem('scanean_products', JSON.stringify(products));
-      renderProducts();
-    }
+        <div id="product-list"></div>
+    </div>
 
-    window.addEventListener('DOMContentLoaded', renderProducts);
-  </script>
+    <div id="scanner-container">
+        <video id="video"></video>
+        <button style="position:absolute; bottom:20px;" onclick="stopScanner()">Chiudi</button>
+    </div>
+
+    <script>
+        let products = JSON.parse(localStorage.getItem('products') || '[]');
+        let codeReader = new ZXing.BrowserMultiFormatReader();
+
+        function render() {
+            const list = document.getElementById('product-list');
+            list.innerHTML = products.map((p, i) => `
+                <div class="card" style="border-left: 5px solid ${getExpColor(p.date)}">
+                    <h4>${p.name} (${p.brand})</h4>
+                    <p>EAN: ${p.ean} | Qtà: ${p.qty}</p>
+                    <p>Scadenza: ${p.date}</p>
+                </div>
+            `).join('');
+            document.getElementById('stats').innerText = `Prodotti: ${products.length} | Scaduti: ${products.filter(p => new Date(p.date) < new Date()).length}`;
+        }
+
+        function getExpColor(date) {
+            const diff = (new Date(date) - new Date()) / (1000 * 60 * 60 * 24);
+            if (diff < 0) return '#9a3412';
+            if (diff <= 3) return '#ff7c54';
+            if (diff <= 7) return '#facc15';
+            return '#32bfa3';
+        }
+
+        async function openScanner() {
+            document.getElementById('scanner-container').style.display = 'block';
+            try {
+                const controls = await codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
+                    if (result) {
+                        alert("Codice rilevato: " + result.text);
+                        stopScanner();
+                        // Qui si aprirebbe il form di inserimento
+                    }
+                });
+            } catch (err) { console.error(err); }
+        }
+
+        function stopScanner() {
+            codeReader.reset();
+            document.getElementById('scanner-container').style.display = 'none';
+        }
+
+        render();
+    </script>
 </body>
 </html>
