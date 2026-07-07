@@ -38,18 +38,22 @@
               <option value="Congelatore">Congelatore</option>
               <option value="Casa e Farmaci">Casa e Farmaci</option>
             </select>
-            <button type="button" onclick="addNewCategoryUI()" class="bg-slate-100 border border-slate-200 px-4 rounded-xl text-brand-600 font-bold hover:bg-slate-200">+</button>
+            <button type="button" onclick="addNewCategoryUI()" class="bg-brand-50 border border-brand-100 px-4 rounded-xl text-brand-600 font-bold">+</button>
           </div>
         </div>
-        
-        <input type="text" id="form-name" placeholder="Nome Prodotto" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm">
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-slate-500">Nome Prodotto *</label>
+          <input type="text" id="form-name" placeholder="Nome del prodotto" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm">
+        </div>
+
         <button type="button" onclick="saveProduct()" class="w-full py-3 bg-brand-500 text-white rounded-xl text-sm font-bold">Salva</button>
       </div>
     </section>
   </main>
 
   <script>
-    // Caricamento categorie all'avvio senza forzare viste
+    // Caricamento categorie all'avvio
     window.addEventListener('DOMContentLoaded', () => {
       loadCustomCategories();
       lucide.createIcons();
@@ -67,7 +71,7 @@
     }
 
     function addNewCategoryUI() {
-      const newCat = prompt("Inserisci il nome della nuova categoria:");
+      const newCat = prompt("Inserisci il nome della nuova posizione:");
       if (newCat && newCat.trim() !== "") {
         const name = newCat.trim();
         const select = document.getElementById('form-category');
@@ -83,9 +87,18 @@
         customCategories.push(name);
         localStorage.setItem('scanean_custom_categories', JSON.stringify(customCategories));
         
+        // Seleziona la nuova categoria
         select.value = name;
       }
     }
+
+    function saveProduct() {
+      const category = document.getElementById('form-category').value;
+      const name = document.getElementById('form-name').value;
+      alert("Prodotto '" + name + "' salvato in: " + category);
+    }
+    
+    lucide.createIcons();
   </script>
 </body>
 </html>
