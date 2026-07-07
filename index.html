@@ -1,342 +1,732 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="it" class="h-full bg-slate-50 text-slate-800">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dispensa Premium</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            background: #f4f6fb;
-            color: #1a1a2e;
-            padding: 0;
-            margin: 0;
-            min-height: 100vh;
-            -webkit-tap-highlight-color: transparent;
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Scan Ean - Expiry & Code Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdfb',
+              100: '#ccfbf1',
+              500: '#32bfa3',
+              600: '#23a088',
+              700: '#115e50',
+              900: '#0d4a3e',
+            },
+            accent: {
+              50: '#fff7f5',
+              100: '#ffeedb',
+              500: '#ff7c54',
+              600: '#e5643d',
+              800: '#9a3412',
+            }
+          }
         }
-        /* Scrollbar elegante */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #c4c4c4; border-radius: 10px; }
-
-        /* Layout base */
-        .app-container { max-width: 480px; margin: 0 auto; background: #fff; min-height: 100vh; box-shadow: 0 0 40px rgba(0,0,0,0.05); position: relative; overflow: hidden; }
-
-        /* Header */
-        .header {
-            background: linear-gradient(135deg, #2d6a4f 0%, #40916c 100%);
-            color: white;
-            padding: 20px 20px 30px;
-            border-radius: 0 0 30px 30px;
-            box-shadow: 0 4px 20px rgba(45,106,79,0.3);
-            transition: all 0.3s;
-        }
-        .header h1 { font-size: 1.8em; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.5px; }
-        .header p { font-size: 0.95em; opacity: 0.85; }
-        .header .badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
-        .header .badge {
-            background: rgba(255,255,255,0.2);
-            backdrop-filter: blur(8px);
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 0.8em;
-            font-weight: 500;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .header .badge .num { font-weight: 700; font-size: 1.1em; }
-
-        /* Navigazione a tab */
-        .nav-tabs {
-            display: flex;
-            background: #f8f9fd;
-            border-radius: 16px;
-            margin: -16px 16px 16px;
-            padding: 4px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-            position: relative;
-            z-index: 2;
-        }
-        .nav-tabs button {
-            flex: 1;
-            border: none;
-            background: transparent;
-            padding: 12px 0;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 0.85em;
-            color: #7a7a9a;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .nav-tabs button.active {
-            background: white;
-            color: #2d6a4f;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-        }
-        .nav-tabs button i { display: block; margin-bottom: 2px; font-size: 1.2em; }
-
-        /* Contenitore schermate */
-        .screen {
-            display: none;
-            padding: 16px;
-            animation: fadeIn 0.35s ease;
-        }
-        .screen.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Card */
-        .card {
-            background: white;
-            border-radius: 20px;
-            padding: 16px 18px;
-            margin-bottom: 14px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
-            border: 1px solid rgba(0,0,0,0.02);
-            transition: all 0.2s;
-        }
-        .card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.08); transform: translateY(-1px); }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-        .card-header h3 { font-size: 1.1em; font-weight: 600; color: #1a1a2e; }
-
-        /* Pulsanti */
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 14px;
-            font-weight: 600;
-            font-size: 0.95em;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #2d6a4f, #40916c);
-            color: white;
-            box-shadow: 0 4px 12px rgba(45,106,79,0.3);
-        }
-        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(45,106,79,0.4); }
-        .btn-secondary {
-            background: #f0f0f5;
-            color: #2d6a4f;
-        }
-        .btn-secondary:hover { background: #e4e4ee; }
-        .btn-danger {
-            background: #e63946;
-            color: white;
-            box-shadow: 0 4px 12px rgba(230,57,70,0.25);
-        }
-        .btn-sm { padding: 8px 16px; font-size: 0.85em; border-radius: 10px; }
-
-        /* Form */
-        .form-group { margin-bottom: 16px; }
-        .form-group label { display: block; font-weight: 500; margin-bottom: 6px; color: #555; font-size: 0.9em; }
-        .form-group input, .form-group select, .form-group textarea {
-            width: 100%;
-            padding: 12px 14px;
-            border: 2px solid #e8e8ef;
-            border-radius: 14px;
-            font-size: 1em;
-            background: #fafafe;
-            transition: border 0.2s;
-            outline: none;
-        }
-        .form-group input:focus, .form-group select:focus { border-color: #2d6a4f; }
-        .form-row { display: flex; gap: 12px; }
-        .form-row .form-group { flex: 1; }
-
-        /* Chips e badge */
-        .chip {
-            display: inline-block;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 0.8em;
-            font-weight: 500;
-            background: #e8f5e9;
-            color: #2d6a4f;
-            margin: 3px;
-        }
-        .chip.red { background: #fde8e8; color: #c62828; }
-        .chip.yellow { background: #fff8e1; color: #f57f17; }
-        .chip.gray { background: #ececec; color: #555; }
-        .chip.green { background: #e8f5e9; color: #2e7d32; }
-
-        /* Lista prodotti */
-        .product-list { list-style: none; }
-        .product-item {
-            display: flex;
-            align-items: center;
-            padding: 14px 0;
-            border-bottom: 1px solid #f0f0f5;
-            gap: 12px;
-            cursor: pointer;
-            transition: background 0.15s;
-        }
-        .product-item:last-child { border-bottom: none; }
-        .product-item:hover { background: #f9f9fd; border-radius: 12px; padding-left: 8px; padding-right: 8px; }
-        .product-icon {
-            width: 48px; height: 48px;
-            background: #e3f2fd;
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.6em;
-            flex-shrink: 0;
-        }
-        .product-info { flex: 1; }
-        .product-info h4 { font-size: 1em; font-weight: 600; margin-bottom: 2px; }
-        .product-info p { font-size: 0.8em; color: #777; }
-        .product-qty {
-            font-weight: 700;
-            font-size: 1.2em;
-            color: #2d6a4f;
-            min-width: 36px;
-            text-align: center;
-        }
-
-        /* Modal overlay */
-        .modal-overlay {
-            position: fixed;
-            top:0; left:0; right:0; bottom:0;
-            background: rgba(0,0,0,0.4);
-            backdrop-filter: blur(4px);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            padding: 20px;
-        }
-        .modal-overlay.open { display: flex; }
-        .modal-box {
-            background: white;
-            border-radius: 28px;
-            padding: 24px;
-            width: 100%;
-            max-width: 440px;
-            max-height: 90vh;
-            overflow-y: auto;
-            animation: modalIn 0.3s ease;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
-        }
-        @keyframes modalIn { from { opacity: 0; transform: scale(0.95) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-        .modal-box h2 { font-size: 1.5em; font-weight: 700; margin-bottom: 16px; }
-        .modal-close {
-            float: right;
-            background: none;
-            border: none;
-            font-size: 1.5em;
-            cursor: pointer;
-            color: #999;
-            padding: 0 4px;
-        }
-
-        /* Statistiche e grafici */
-        .stat-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 16px;
-        }
-        .stat-card {
-            background: #f8f9fd;
-            border-radius: 16px;
-            padding: 14px;
-            text-align: center;
-            border: 1px solid #eeeef4;
-        }
-        .stat-card .stat-value { font-size: 1.8em; font-weight: 700; color: #2d6a4f; }
-        .stat-card .stat-label { font-size: 0.75em; color: #888; margin-top: 4px; }
-
-        canvas { max-width: 100%; height: auto; border-radius: 12px; margin-top: 8px; }
-
-        /* Filtri */
-        .filter-bar {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 16px;
-        }
-        .filter-bar select, .filter-bar input {
-            padding: 8px 14px;
-            border: 2px solid #e0e0e8;
-            border-radius: 12px;
-            font-size: 0.9em;
-            background: white;
-            flex: 1;
-            min-width: 80px;
-        }
-
-        /* Ricerca */
-        .search-box {
-            background: #f5f6fa;
-            border-radius: 16px;
-            padding: 8px 16px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 14px;
-        }
-        .search-box input {
-            background: transparent;
-            border: none;
-            outline: none;
-            flex: 1;
-            font-size: 1em;
-            padding: 8px 0;
-        }
-        .search-box i { color: #aaa; font-size: 1.2em; }
-
-        /* Animazioni extra */
-        .fade-in { animation: fadeIn 0.4s ease; }
-        .slide-up { animation: slideUp 0.3s ease; }
-        @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
-
-        /* Responsive */
-        @media (max-width: 480px) {
-            .app-container { max-width: 100%; box-shadow: none; }
-            .header { border-radius: 0; }
-        }
-
-        /* Icone (usiamo caratteri unicode per evitare dipendenze) */
-        .icon { font-style: normal; }
-    </style>
+      }
+    }
+  </script>
+  <style>
+    body {
+      overscroll-behavior-y: contain;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
 </head>
-<body>
+<body class="h-full flex flex-col font-sans select-none overflow-hidden bg-slate-50">
 
-<div class="app-container" id="app">
-    <!-- Header -->
-    <div class="header">
-        <h1>📦 Dispensa Premium</h1>
-        <p id="header-subtitle">Gestisci i tuoi prodotti offline</p>
-        <div class="badge-row" id="headerBadges">
-            <div class="badge"><span class="num" id="totalProducts">0</span> prodotti</div>
-            <div class="badge" style="background:rgba(255,215,0,0.25);"><span class="num" id="expiringSoon">0</span> in scadenza</div>
-            <div class="badge" style="background:rgba(255,80,80,0.25);"><span class="num" id="expiredCount">0</span> scaduti</div>
+  <div id="ad-banner" class="bg-gradient-to-r from-accent-50 via-white to-accent-50 py-1.5 px-4 text-center text-xs border-b border-accent-100 flex items-center justify-between z-50 shrink-0">
+    <span class="text-accent-800 font-medium truncate">Sponsor: Risparmia il 20% sulla spesa con il codice SCANEAN20!</span>
+    <button onclick="openPaypalModal()" class="bg-accent-500 text-white text-[10px] font-bold px-2 py-1 rounded hover:bg-accent-600 transition shadow-sm shrink-0">
+      Rimuovi Ads (1.99€)
+    </button>
+  </div>
+
+  <header class="bg-white sticky top-0 z-40 px-4 py-3 flex items-center justify-between border-b border-slate-100 shadow-sm shrink-0">
+    <div class="flex items-center gap-2">
+      <div class="p-1.5 bg-brand-100 text-brand-600 rounded-lg">
+        <i data-lucide="scan" class="w-6 h-6"></i>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold tracking-tight text-slate-900 flex items-center gap-1.5">
+          Scan Ean <span id="premium-badge" class="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full font-medium border border-slate-200">Free</span>
+        </h1>
+        <p class="text-[10px] text-slate-500 font-medium">Scansione rapida e gestione scadenze</p>
+      </div>
+    </div>
+    
+    <div class="flex gap-2">
+      <div class="text-center px-2 py-0.5 bg-brand-50 border border-brand-100 rounded-md">
+        <div id="stat-expired" class="text-xs font-bold text-brand-600">0</div>
+        <div class="text-[8px] uppercase text-brand-500 font-bold">In Dispensa</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 overflow-y-auto pb-28 px-4 pt-4 no-scrollbar">
+    
+    <section id="view-dashboard" class="space-y-4">
+      <div class="relative">
+        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+        <input type="text" id="search-input" oninput="renderProducts()" placeholder="Cerca per nome, marca o codice..." class="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 text-slate-800 placeholder-slate-400 shadow-sm">
+      </div>
+
+      <div id="category-filters" class="flex gap-2 overflow-x-auto no-scrollbar py-1">
         </div>
-    </div>
 
-    <!-- Tab navigation -->
-    <div class="nav-tabs" id="navTabs">
-        <button data-screen="dashboard" class="active"><i>📊</i> Dashboard</button>
-        <button data-screen="products"><i>📋</i> Prodotti</button>
-        <button data-screen="stats"><i>📈</i> Statistiche</button>
-        <button data-screen="settings"><i>⚙️</i> Impostazioni</button>
-    </div>
+      <div id="products-container" class="space-y-3"></div>
+      
+      <div id="empty-state" class="hidden flex flex-col items-center justify-center py-16 text-center">
+        <div class="p-4 bg-white rounded-full text-slate-300 mb-3 border border-slate-100 shadow-sm">
+          <i data-lucide="package-open" class="w-12 h-12 text-brand-500"></i>
+        </div>
+        <p class="text-sm font-semibold text-slate-700">Nessun prodotto registrato</p>
+        <p class="text-xs text-slate-500 mt-1 max-w-[200px]">Usa il lettore per scansionare qualsiasi codice EAN o QR Code!</p>
+      </div>
+    </section>
 
-    <!-- SCHERMATE -->
-    <!-- Dashboard -->
-    <div id="screen-dashboard" class="screen active">
-        <div class="stat-grid" id="dashStats">
-            <div class="stat-card"><div class="stat-value" id="dashTotProd">0</div><div class="stat-label">Totale prodotti</div></div>
-            <div class="stat-card"><div class="stat-value" id="dashCategorie">0</div><div class="stat-label">C
+    <section id="view-scan" class="hidden space-y-4">
+      <div class="bg-white rounded-2xl overflow-hidden relative border border-slate-200 shadow-sm flex flex-col items-center justify-center min-h-[240px]">
+        <div id="scanner-reader" class="w-full aspect-[4/3] bg-black"></div>
+        <div class="absolute inset-0 border-2 border-brand-500/50 pointer-events-none rounded-2xl"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-56 h-36 border-2 border-dashed border-accent-500 rounded flex items-center justify-center pointer-events-none">
+          <span class="text-[10px] bg-slate-900/90 text-white px-2 py-0.5 rounded font-mono font-bold">ALLINEA EAN / QR</span>
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <button onclick="stopScanning(); resetForm(); switchView('add')" class="flex-1 py-3 bg-white border border-slate-200 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 text-slate-700 shadow-sm">
+          <i data-lucide="keyboard" class="w-4 h-4 text-brand-500"></i> Inserisci manuale
+        </button>
+      </div>
+    </section>
+
+    <section id="view-add" class="hidden space-y-4">
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <div class="flex justify-between items-center">
+          <h2 id="form-title" class="text-md font-bold text-slate-900 flex items-center gap-2">
+            <i data-lucide="plus-circle" class="w-5 h-5 text-brand-500"></i> Dati Prodotto
+          </h2>
+        </div>
+        
+        <input type="hidden" id="form-product-id" value="">
+
+        <div class="space-y-2 border border-slate-200 rounded-xl p-3 bg-slate-50 flex flex-col items-center justify-center">
+          <span class="text-xs font-bold text-slate-500 self-start">Foto del Prodotto (Abbina a EAN)</span>
+          
+          <div class="w-full relative flex items-center justify-center bg-white rounded-lg overflow-hidden border border-slate-200 min-h-[130px]">
+            <video id="product-video" autoplay playsinline class="hidden w-full max-h-44 object-cover bg-black"></video>
+            <img id="product-preview" class="hidden w-28 h-28 object-cover rounded-md my-2 border shadow-sm" src="">
+            
+            <div id="photo-placeholder" class="text-center py-5">
+              <i data-lucide="image" class="w-6 h-6 text-slate-300 mx-auto mb-1"></i>
+              <span class="text-[11px] text-slate-400 block font-medium">Nessuna foto associata</span>
+            </div>
+          </div>
+
+          <button type="button" id="btn-camera-action" onclick="handleCameraAction()" class="w-full py-2.5 bg-brand-500 text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm active:bg-brand-600 transition-all">
+            <i id="camera-icon" data-lucide="camera" class="w-4 h-4"></i>
+            <span id="camera-text">Scatta Foto Prodotto</span>
+          </button>
+          <input type="hidden" id="form-photo" value="">
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-slate-500">Codice EAN / QR</label>
+          <input type="text" id="form-barcode" oninput="checkExistingEan(this.value)" placeholder="EAN o QR" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-mono text-slate-800">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div class="space-y-1.5 col-span-2">
+            <label class="text-xs font-bold text-slate-500">Nome Prodotto *</label>
+            <input type="text" id="form-name" placeholder="Nome del prodotto" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800">
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-slate-500">Marca</label>
+            <input type="text" id="form-brand" placeholder="Es. Barilla" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800">
+          </div>
+          
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-slate-500">Posizione</label>
+            <div class="flex gap-1.5">
+              <select id="form-category" class="flex-1 bg-slate-100 border border-slate-200 rounded-xl px-2 py-2.5 text-xs text-slate-800 focus:outline-none">
+                </select>
+              <button type="button" onclick="addNewCategory()" class="p-2.5 bg-brand-500 text-white rounded-xl hover:bg-brand-600 shadow-sm flex items-center justify-center shrink-0">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-slate-500">Data di Scadenza *</label>
+          <input type="date" id="form-expiry" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800">
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-slate-500">Note Personalizzate</label>
+          <textarea id="form-notes" rows="2" placeholder="Note..." class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-800 resize-none"></textarea>
+        </div>
+
+        <div class="flex gap-3 pt-2">
+          <button type="button" onclick="stopCamera(); resetForm(); switchView('dashboard')" class="flex-1 py-3 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700">
+            Annulla
+          </button>
+          <button type="button" onclick="saveProduct()" class="flex-1 py-3 bg-brand-500 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1 shadow-sm">
+            <i data-lucide="check" class="w-4 h-4"></i> Salva
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-stats" class="hidden space-y-4">
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <h2 class="text-md font-bold text-slate-900 flex items-center gap-2">
+          <i data-lucide="bar-chart-3" class="w-5 h-5 text-brand-500"></i> Statistiche
+        </h2>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="p-3 bg-slate-50 rounded-xl text-center">
+            <div id="stat-consumed" class="text-2xl font-bold text-brand-500">0</div>
+            <p class="text-[10px] text-slate-500">Consumati</p>
+          </div>
+          <div class="p-3 bg-slate-50 rounded-xl text-center">
+            <div id="stat-thrown" class="text-2xl font-bold text-red-500">0</div>
+            <p class="text-[10px] text-slate-500">Sprecati</p>
+          </div>
+        </div>
+        <button onclick="clearDatabase()" class="w-full py-3 bg-red-50 text-red-600 rounded-xl text-xs font-semibold">
+          Resetta Tutto il Database
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <nav class="bg-white fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 flex items-center justify-around py-3 px-6 shadow-sm shrink-0">
+    <button onclick="switchView('dashboard')" id="nav-dashboard" class="flex flex-col items-center gap-1 text-brand-500">
+      <i data-lucide="layout-grid" class="w-5 h-5"></i>
+      <span class="text-[9px] font-bold">Dispensa</span>
+    </button>
+    <button onclick="resetForm(); startScanning(); switchView('scan')" id="nav-scan" class="flex flex-col items-center justify-center w-14 h-14 bg-brand-500 text-white rounded-full -translate-y-4 shadow-md border-4 border-slate-50">
+      <i data-lucide="scan-line" class="w-6 h-6"></i>
+    </button>
+    <button onclick="switchView('stats')" id="nav-stats" class="flex flex-col items-center gap-1 text-slate-400">
+      <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+      <span class="text-[9px] font-bold">Report</span>
+    </button>
+  </nav>
+
+  <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 py-2.5 px-4 bg-slate-900/90 text-white rounded-full text-xs font-semibold opacity-0 transition-opacity pointer-events-none">
+    <span id="toast-text">Messaggio</span>
+  </div>
+
+  <script>
+    let products = [];
+    // Posizioni base predefinite
+    let categories = ["Frigorifero", "Dispensa", "Congelatore", "Casa e Farmaci"];
+    let consumedCount = parseInt(localStorage.getItem('scanean_consumed')) || 0;
+    let thrownCount = parseInt(localStorage.getItem('scanean_thrown')) || 0;
+    let activeCategory = 'all';
+    let html5QrScanner = null;
+    let cameraStream = null;
+    let isCameraActive = false;
+    let db = null;
+
+    // APERTURA / AGGIORNAMENTO DI INDEXEDDB CON SUPPORTO PER LE CATEGORIE
+    const dbRequest = indexedDB.open("ScanEanDB", 2);
+    
+    dbRequest.onupgradeneeded = function(event) {
+      let database = event.target.result;
+      if (!database.objectStoreNames.contains("products")) {
+        database.createObjectStore("products", { keyPath: "id" });
+      }
+      if (!database.objectStoreNames.contains("categories")) {
+        database.createObjectStore("categories", { autoIncrement: true });
+      }
+    };
+
+    dbRequest.onsuccess = function(event) {
+      db = event.target.result;
+      loadCategoriesFromDB(() => {
+        loadProductsFromDB();
+      });
+    };
+
+    dbRequest.onerror = function() {
+      showToast("Errore nell'inizializzazione della memoria.");
+    };
+
+    function loadCategoriesFromDB(callback) {
+      if (!db) return;
+      const transaction = db.transaction(["categories"], "readonly");
+      const store = transaction.objectStore("categories");
+      const request = store.getAll();
+
+      request.onsuccess = function() {
+        if (request.result && request.result.length > 0) {
+          categories = request.result;
+        } else {
+          // Se vuoto, salviamo quelle base la prima volta
+          saveInitialCategories();
+        }
+        updateCategorySelectOptions();
+        renderCategoryFilters();
+        if (callback) callback();
+      };
+    }
+
+    function saveInitialCategories() {
+      const transaction = db.transaction(["categories"], "readwrite");
+      const store = transaction.objectStore("categories");
+      categories.forEach(cat => store.add(cat));
+    }
+
+    function loadProductsFromDB(callback) {
+      if (!db) return;
+      const transaction = db.transaction(["products"], "readonly");
+      const store = transaction.objectStore("products");
+      const request = store.getAll();
+
+      request.onsuccess = function() {
+        products = request.result || [];
+        renderCategoryFilters(); // Ridisegna i filtri per aggiornare lo stato di selezione
+        renderProducts();
+        updateDashboardStats();
+        if (callback) callback();
+      };
+    }
+
+    // AGGIUNGE UNA NUOVA POSIZIONE PERSONALIZZATA
+    function addNewCategory() {
+      const newCat = prompt("Inserisci il nome della nuova posizione (es. Cantina, Dispensa Secondaria):");
+      if (!newCat || newCat.trim() === "") return;
+      
+      const cleanedCat = newCat.trim();
+      
+      if (categories.includes(cleanedCat)) {
+        showToast("Questa posizione esiste già!");
+        return;
+      }
+
+      categories.push(cleanedCat);
+      
+      const transaction = db.transaction(["categories"], "readwrite");
+      const store = transaction.objectStore("categories");
+      store.add(cleanedCat);
+
+      transaction.oncomplete = function() {
+        showToast("Nuova posizione aggiunta!");
+        updateCategorySelectOptions();
+        renderCategoryFilters();
+        document.getElementById('form-category').value = cleanedCat;
+      };
+    }
+
+    function updateCategorySelectOptions() {
+      const select = document.getElementById('form-category');
+      if (!select) return;
+      select.innerHTML = '';
+      categories.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat;
+        option.textContent = cat;
+        if(cat === "Dispensa") option.selected = true;
+        select.appendChild(option);
+      });
+    }
+
+    function renderCategoryFilters() {
+      const container = document.getElementById('category-filters');
+      if (!container) return;
+      container.innerHTML = '';
+
+      // Tasto "Tutti" sempre presente
+      const allBtn = document.createElement('button');
+      allBtn.className = `category-btn px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${activeCategory === 'all' ? 'bg-brand-500 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200'}`;
+      allBtn.textContent = 'Tutti';
+      allBtn.onclick = (e) => filterCategory(e, 'all');
+      container.appendChild(allBtn);
+
+      // Generazione pulsanti per ogni categoria esistente
+      categories.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.className = `category-btn px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${activeCategory === cat ? 'bg-brand-500 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200'}`;
+        btn.textContent = cat;
+        btn.onclick = (e) => filterCategory(e, cat);
+        container.appendChild(btn);
+      });
+    }
+
+    lucide.createIcons();
+
+    function switchView(viewId) {
+      const views = ['dashboard', 'scan', 'add', 'stats'];
+      views.forEach(v => {
+        const el = document.getElementById(`view-${v}`);
+        if (el) el.classList.add('hidden');
+        
+        const navBtn = document.getElementById(`nav-${v}`);
+        if (navBtn && v !== 'scan') {
+          navBtn.classList.remove('text-brand-500');
+          navBtn.classList.add('text-slate-400');
+        }
+      });
+
+      const activeView = document.getElementById(`view-${viewId}`);
+      if (activeView) activeView.classList.remove('hidden');
+      
+      const activeNav = document.getElementById(`nav-${viewId}`);
+      if (activeNav && viewId !== 'scan') {
+        activeNav.classList.remove('text-slate-400');
+        activeNav.classList.add('text-brand-500');
+      }
+
+      if (viewId !== 'scan') stopScanning();
+      if (viewId !== 'add') stopCamera();
+      if (viewId === 'stats') renderStats();
+    }
+
+    function showToast(text) {
+      const toast = document.getElementById('toast');
+      const toastText = document.getElementById('toast-text');
+      if (toast && toastText) {
+        toastText.textContent = text;
+        toast.classList.remove('opacity-0');
+        setTimeout(() => { toast.classList.add('opacity-0'); }, 2000);
+      }
+    }
+
+    function checkExistingEan(barcodeText) {
+      if (!barcodeText || document.getElementById('form-product-id').value !== '') return;
+      
+      const existingProduct = products.find(p => p.barcode === barcodeText.trim());
+      
+      if (existingProduct) {
+        document.getElementById('form-name').value = existingProduct.name || '';
+        document.getElementById('form-brand').value = existingProduct.brand || '';
+        document.getElementById('form-category').value = existingProduct.category || 'Dispensa';
+        document.getElementById('form-notes').value = existingProduct.notes || '';
+        
+        if (existingProduct.photo) {
+          document.getElementById('form-photo').value = existingProduct.photo;
+          const preview = document.getElementById('product-preview');
+          preview.src = existingProduct.photo;
+          preview.classList.remove('hidden');
+          document.getElementById('photo-placeholder').classList.add('hidden');
+        }
+        
+        showToast("Prodotto riconosciuto! Inserisci solo la nuova scadenza.");
+        
+        setTimeout(() => {
+          document.getElementById('form-expiry').focus();
+        }, 300);
+      }
+    }
+
+    function handleCameraAction() {
+      if (!isCameraActive) {
+        const video = document.getElementById('product-video');
+        const placeholder = document.getElementById('photo-placeholder');
+        const preview = document.getElementById('product-preview');
+        
+        placeholder.classList.add('hidden');
+        preview.classList.add('hidden');
+        video.classList.remove('hidden');
+
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false })
+          .then(stream => {
+            cameraStream = stream;
+            video.srcObject = stream;
+            isCameraActive = true;
+            
+            document.getElementById('camera-text').textContent = "Scatta Ora";
+            const iconEl = document.getElementById('camera-icon');
+            iconEl.setAttribute('data-lucide', 'aperture');
+            lucide.createIcons();
+          })
+          .catch(err => {
+            showToast("Impossibile accedere alla fotocamera");
+            resetPhotoUI();
+          });
+      } else {
+        const video = document.getElementById('product-video');
+        const canvas = document.createElement('canvas');
+        
+        canvas.width = 240;
+        canvas.height = 240;
+        const ctx = canvas.getContext('2d');
+        
+        const minDim = Math.min(video.videoWidth, video.videoHeight);
+        const sx = (video.videoWidth - minDim) / 2;
+        const sy = (video.videoHeight - minDim) / 2;
+        
+        ctx.drawImage(video, sx, sy, minDim, minDim, 0, 0, canvas.width, canvas.height);
+        
+        const base64 = canvas.toDataURL('image/jpeg', 0.6);
+        document.getElementById('form-photo').value = base64;
+        
+        const preview = document.getElementById('product-preview');
+        preview.src = base64;
+        preview.classList.remove('hidden');
+        
+        stopCamera();
+        showToast("Foto abbinata al prodotto!");
+      }
+    }
+
+    function stopCamera() {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+      }
+      isCameraActive = false;
+      document.getElementById('product-video').classList.add('hidden');
+      
+      document.getElementById('camera-text').textContent = "Scatta Foto Prodotto";
+      const iconEl = document.getElementById('camera-icon');
+      iconEl.setAttribute('data-lucide', 'camera');
+      lucide.createIcons();
+    }
+
+    function resetPhotoUI() {
+      stopCamera();
+      document.getElementById('form-photo').value = '';
+      document.getElementById('product-preview').classList.add('hidden');
+      document.getElementById('product-preview').src = '';
+      document.getElementById('photo-placeholder').classList.remove('hidden');
+    }
+
+    function resetForm() {
+      document.getElementById('form-product-id').value = '';
+      document.getElementById('form-name').value = '';
+      document.getElementById('form-barcode').value = '';
+      document.getElementById('form-brand').value = '';
+      document.getElementById('form-category').value = 'Dispensa';
+      document.getElementById('form-expiry').value = '';
+      document.getElementById('form-notes').value = '';
+      resetPhotoUI();
+      document.getElementById('form-title').innerHTML = `<i data-lucide="plus-circle" class="w-5 h-5 text-brand-500"></i> Dati Prodotto`;
+      lucide.createIcons();
+    }
+
+    function editProduct(id) {
+      const product = products.find(p => p.id === id);
+      if (!product) return;
+
+      resetForm();
+
+      document.getElementById('form-product-id').value = product.id;
+      document.getElementById('form-name').value = product.name || '';
+      document.getElementById('form-barcode').value = product.barcode || '';
+      document.getElementById('form-brand').value = product.brand || '';
+      document.getElementById('form-category').value = product.category || 'Dispensa';
+      document.getElementById('form-expiry').value = product.expiry || '';
+      document.getElementById('form-notes').value = product.notes || '';
+      
+      if (product.photo) {
+        document.getElementById('form-photo').value = product.photo;
+        const preview = document.getElementById('product-preview');
+        preview.src = product.photo;
+        preview.classList.remove('hidden');
+        document.getElementById('photo-placeholder').classList.add('hidden');
+      }
+      
+      document.getElementById('form-title').innerHTML = `<i data-lucide="edit" class="w-5 h-5 text-brand-500"></i> Modifica Prodotto`;
+      lucide.createIcons();
+
+      switchView('add');
+    }
+
+    function saveProduct() {
+      const productId = document.getElementById('form-product-id').value;
+      const name = document.getElementById('form-name').value.trim();
+      const barcode = document.getElementById('form-barcode').value.trim();
+      const brand = document.getElementById('form-brand').value.trim();
+      const category = document.getElementById('form-category').value;
+      const expiry = document.getElementById('form-expiry').value;
+      const notes = document.getElementById('form-notes').value.trim();
+      const photo = document.getElementById('form-photo').value;
+
+      if (!name || !expiry) {
+        showToast("Inserisci nome e data di scadenza!");
+        return;
+      }
+
+      let targetProduct;
+      let isNew = false;
+
+      if (productId) {
+        targetProduct = { id: productId, name, barcode, brand, category, expiry, notes, photo };
+      } else {
+        isNew = true;
+        targetProduct = { id: 'p_' + Date.now(), name, barcode, brand, category, expiry, notes, photo };
+      }
+
+      const transaction = db.transaction(["products"], "readwrite");
+      const store = transaction.objectStore("products");
+      store.put(targetProduct);
+
+      transaction.oncomplete = function() {
+        showToast(isNew ? "Prodotto salvato!" : "Prodotto modificato!");
+        resetForm();
+        loadProductsFromDB(() => {
+          switchView('dashboard');
+        });
+      };
+
+      transaction.onerror = function() {
+        showToast("Errore durante il salvataggio.");
+      };
+    }
+
+    function renderProducts() {
+      const container = document.getElementById('products-container');
+      const emptyState = document.getElementById('empty-state');
+      const searchQuery = document.getElementById('search-input').value.toLowerCase().trim();
+      
+      if (!container) return;
+      container.innerHTML = '';
+
+      let filtered = products.filter(p => {
+        const matchesCategory = (activeCategory === 'all' || p.category === activeCategory);
+        const matchesSearch = !searchQuery || 
+                              p.name.toLowerCase().includes(searchQuery) || 
+                              (p.brand && p.brand.toLowerCase().includes(searchQuery)) || 
+                              (p.barcode && p.barcode.toLowerCase().includes(searchQuery));
+        return matchesCategory && matchesSearch;
+      });
+
+      if (filtered.length === 0) {
+        emptyState.classList.remove('hidden');
+      } else {
+        emptyState.classList.add('hidden');
+        filtered.forEach(p => {
+          const div = document.createElement('div');
+          div.className = 'bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-3 cursor-pointer active:bg-slate-50 transition-colors';
+          div.setAttribute('onclick', `editProduct('${p.id}')`);
+          
+          const imgHTML = p.photo 
+            ? `<img src="${p.photo}" class="w-10 h-10 object-cover rounded-lg border border-slate-100 shrink-0">`
+            : `<div class="w-10 h-10 bg-slate-50 border border-slate-100 rounded-lg flex items-center justify-center text-slate-300 shrink-0">
+                <i data-lucide="package" class="w-5 h-5 text-brand-500"></i>
+               </div>`;
+
+          div.innerHTML = `
+            <div class="flex items-center gap-3 min-w-0 flex-1">
+              ${imgHTML}
+              <div class="min-w-0 flex-1">
+                <span class="text-xs font-bold text-slate-900 block truncate">${p.name}</span>
+                <p class="text-[11px] text-slate-500 truncate">${p.brand || 'Nessuna marca'} &bull; ${p.category}</p>
+                <p class="text-[10px] text-brand-600 font-semibold mt-0.5">Scadenza: ${p.expiry}</p>
+                ${p.notes ? `<p class="text-[10px] text-slate-400 italic truncate">Note: ${p.notes}</p>` : ''}
+              </div>
+            </div>
+            <div class="flex gap-1.5 shrink-0" onclick="event.stopPropagation();">
+              <button onclick="consumeProduct('${p.id}')" class="p-2 bg-brand-50 text-brand-600 rounded-lg"><i data-lucide="check" class="w-4 h-4"></i></button>
+              <button onclick="throwProduct('${p.id}')" class="p-2 bg-red-50 text-red-600 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            </div>
+          `;
+          container.appendChild(div);
+        });
+      }
+      lucide.createIcons();
+    }
+
+    function filterCategory(event, category) {
+      activeCategory = category;
+      const buttons = document.querySelectorAll('.category-btn');
+      buttons.forEach(btn => {
+        btn.classList.remove('bg-brand-500', 'text-white', 'active');
+        btn.classList.add('bg-white', 'text-slate-600', 'border', 'border-slate-200');
+      });
+      event.currentTarget.classList.remove('bg-white', 'text-slate-600', 'border', 'border-slate-200');
+      event.currentTarget.classList.add('bg-brand-500', 'text-white', 'active');
+      renderProducts();
+    }
+
+    function consumeProduct(id) {
+      consumedCount++;
+      localStorage.setItem('scanean_consumed', consumedCount);
+      
+      const transaction = db.transaction(["products"], "readwrite");
+      transaction.objectStore("products").delete(id);
+      
+      transaction.oncomplete = function() {
+        loadProductsFromDB();
+      };
+    }
+
+    function throwProduct(id) {
+      thrownCount++;
+      localStorage.setItem('scanean_thrown', thrownCount);
+      
+      const transaction = db.transaction(["products"], "readwrite");
+      transaction.objectStore("products").delete(id);
+      
+      transaction.oncomplete = function() {
+        loadProductsFromDB();
+      };
+    }
+
+    function updateDashboardStats() {
+      const el = document.getElementById('stat-expired');
+      if (el) el.textContent = products.length;
+    }
+
+    function renderStats() {
+      document.getElementById('stat-consumed').textContent = consumedCount;
+      document.getElementById('stat-thrown').textContent = thrownCount;
+    }
+
+    function clearDatabase() {
+      if (confirm("Vuoi azzerare completamente la dispensa?")) {
+        const transaction = db.transaction(["products", "categories"], "readwrite");
+        transaction.objectStore("products").clear();
+        transaction.objectStore("categories").clear();
+        
+        transaction.oncomplete = function() {
+          consumedCount = 0; thrownCount = 0;
+          localStorage.removeItem('scanean_consumed');
+          localStorage.removeItem('scanean_thrown');
+          // Ripristina posizioni predefinite
+          categories = ["Frigorifero", "Dispensa", "Congelatore", "Casa e Farmaci"];
+          saveInitialCategories();
+          updateCategorySelectOptions();
+          activeCategory = 'all';
+          loadProductsFromDB();
+          switchView('dashboard');
+          showToast("Database azzerato.");
+        };
+      }
+    }
+
+    function startScanning() {
+      if (!html5QrScanner) html5QrScanner = new Html5Qrcode("scanner-reader");
+      html5QrScanner.start({ facingMode: "environment" }, { fps: 15, qrbox: 200 }, (decodedText) => {
+        stopScanning();
+        resetForm();
+        document.getElementById('form-barcode').value = decodedText;
+        checkExistingEan(decodedText);
+        switchView('add');
+      }, () => {});
+    }
+
+    function stopScanning() {
+      if (html5QrScanner && html5QrScanner.isScanning) html5QrScanner.stop().catch(()=>{});
+    }
+  </script>
+</body>
+</html>
