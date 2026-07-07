@@ -24,15 +24,14 @@
   </header>
 
   <main class="flex-1 overflow-y-auto pb-28 px-4 pt-4 no-scrollbar">
-    <!-- DASHBOARD -->
     <section id="view-dashboard" class="space-y-4">
       <h2 class="text-sm font-bold text-slate-600">La tua Dispensa</h2>
       <div id="products-container" class="space-y-3"></div>
     </section>
 
-    <!-- AGGIUNTA PRODOTTO -->
     <section id="view-add" class="hidden space-y-4">
       <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        
         <div class="space-y-1.5">
           <label class="text-xs font-bold text-slate-500">Posizione</label>
           <div class="flex gap-2">
@@ -45,6 +44,7 @@
             <button type="button" onclick="addNewCategoryUI()" class="bg-brand-50 border border-brand-100 px-4 rounded-xl text-brand-600 font-bold hover:bg-brand-100">+</button>
           </div>
         </div>
+
         <input type="text" id="form-name" placeholder="Nome Prodotto" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm">
         <button type="button" onclick="saveProduct()" class="w-full py-3 bg-brand-500 text-white rounded-xl text-sm font-bold">Salva</button>
         <button type="button" onclick="switchView('dashboard')" class="w-full py-2 bg-slate-100 text-slate-600 rounded-xl text-sm font-bold">Annulla</button>
@@ -58,9 +58,10 @@
   </nav>
 
   <script>
+    // Caricamento categorie e forzatura vista dashboard
     window.addEventListener('DOMContentLoaded', () => {
       loadCustomCategories();
-      switchView('dashboard'); // Forza avvio su Dashboard
+      switchView('dashboard'); 
       lucide.createIcons();
     });
 
@@ -72,6 +73,7 @@
       if (active) active.classList.remove('hidden');
     }
 
+    // Funzione per caricare le categorie dal salvataggio
     function loadCustomCategories() {
       const select = document.getElementById('form-category');
       const cats = JSON.parse(localStorage.getItem('scanean_custom_categories')) || [];
@@ -82,8 +84,9 @@
       });
     }
 
+    // Funzione per aggiungere nuova categoria tramite prompt
     function addNewCategoryUI() {
-      const name = prompt("Inserisci nuova posizione:");
+      const name = prompt("Inserisci nome nuova posizione:");
       if (name && name.trim()) {
         const select = document.getElementById('form-category');
         const opt = document.createElement('option');
